@@ -5,9 +5,11 @@ export const limiter = rateLimit({
     max: 100,
 
     standardHeaders: true,
-    legacyHeaders: true,
+    legacyHeaders: false,
 
-    message: {
-        error: "Too many requests. Please try again later.",
+    handler: (_req, res) => {
+        res.status(429).json({
+            error: "Too many requests. Please try again later.",
+        });
     },
 });
