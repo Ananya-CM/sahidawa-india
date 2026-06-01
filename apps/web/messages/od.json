@@ -29,14 +29,7 @@
         "heroTitle": {
             "prefix": "ଆପଣଙ୍କ ସ୍ୱାସ୍ଥ୍ୟ, ",
             "highlight": "ସତ୍ୟାପିତ ଏବଂ ସୁରକ୍ଷିତ ।"
-        },
-        "scan_medicine": "Scan Medicine",
-        "scan_now": "Scan Now",
-        "find_pharmacy": "Find Pharmacy",
-        "report_subtitle": "Report suspicious medicine",
-        "our_core_features": "Explore Features",
-        "real_time": "REAL TIME",
-        "alerts_description": "Stay updated with the latest medicine safety alerts and recalls."
+        }
     },
     "Navigation": {
         "how_it_works": "ଏହା କିପରି କାର୍ଯ୍ୟ କରେ",
@@ -275,8 +268,6 @@
             "title": "ଯୋଗାଯୋଗ କରନ୍ତୁ",
             "subtitle": "କୌଣସି ପ୍ରଶ୍ନ, ଚିନ୍ତାଧାରା ଅଛି କିମ୍ବା ଯୋଗଦାନ କରିବାକୁ ଚାହୁଁଛନ୍ତି କି? ଆମେ ଆପଣଙ୍କଠାରୁ ଶୁଣିବାକୁ ଚାହୁଁ।"
         }
-<<<<<<< HEAD
-=======
     },
     "Faq": {
         "badge": "GSSoC 2026 ଓପନ୍ ସୋର୍ସ ପ୍ରୋଜେକ୍ଟ",
@@ -322,6 +313,5 @@
                 "answer": "CDSCO ର ଅର୍ଥ Central Drugs Standard Control Organisation। ଏହା କସ୍ମେଟିକ୍ସ, ଔଷଧ ଏବଂ ଚିକିତ୍ସା ଉପକରଣ ପାଇଁ ଭାରତର ଜାତୀୟ ନିୟାମକ ସଂସ୍ଥା। SahiDawa ସେମାନଙ୍କର ଅଧିକୃତ ଡାଟାବେସ୍ ସହିତ ଔଷଧଗୁଡ଼ିକୁ ଯାଞ୍ଚ କରେ।"
             }
         }
->>>>>>> main
     }
 }

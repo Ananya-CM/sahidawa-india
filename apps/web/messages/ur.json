@@ -29,14 +29,7 @@
         "heroTitle": {
             "prefix": "آپ کی صحت، ",
             "highlight": "تصدیق شدہ اور محفوظ۔"
-        },
-        "scan_medicine": "Scan Medicine",
-        "scan_now": "Scan Now",
-        "find_pharmacy": "Find Pharmacy",
-        "report_subtitle": "Report suspicious medicine",
-        "our_core_features": "Explore Features",
-        "real_time": "REAL TIME",
-        "alerts_description": "Stay updated with the latest medicine safety alerts and recalls."
+        }
     },
     "Navigation": {
         "how_it_works": "یہ کیسے کام کرتا ہے",
@@ -275,8 +268,6 @@
             "title": "رابطہ کریں",
             "subtitle": "کوئی سوالات، خیالات ہیں یا اس پروجیکٹ میں اپنا تعاون پیش کرنا چاہتے ہیں؟ ہمیں آپ سے سن کر خوشی ہوگی۔"
         }
-<<<<<<< HEAD
-=======
     },
     "Faq": {
         "badge": "GSSoC 2026 اوپن سورس پروجیکٹ",
@@ -322,6 +313,5 @@
                 "answer": "CDSCO کا مطلب Central Drugs Standard Control Organisation ہے۔ یہ کاسمیٹکس، فارماسیوٹیکلز اور میڈیکل ڈیوائسز کے لیے بھارت کا قومی ریگولیٹری ادارہ ہے۔ SahiDawa ان کے سرکاری ڈیٹابیس کے مطابق ادویات کی تصدیق کرتا ہے۔"
             }
         }
->>>>>>> main
     }
 }
