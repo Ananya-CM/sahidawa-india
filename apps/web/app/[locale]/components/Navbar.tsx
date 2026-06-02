@@ -15,7 +15,6 @@ import {
     Moon,
     LogIn,
 } from "lucide-react";
-import { useRouter, useParams } from "next/navigation";
 import { Link, usePathname } from "@/i18n/routing";
 import { useTranslations } from "next-intl";
 import LanguageSwitcher from "../LanguageSwitcher";
@@ -83,10 +82,7 @@ const MOBILE_NAV_ITEMS: NavItem[] = [
 ];
 
 export default function Navbar() {
-    const router = useRouter();
-    const params = useParams();
     const pathname = usePathname();
-    const locale = Array.isArray(params.locale) ? params.locale[0] : params.locale;
     const tHome = useTranslations("Home");
     const tNav = useTranslations("Navigation");
 
@@ -137,11 +133,7 @@ export default function Navbar() {
         return null;
     }
 
-    const handleNavigation = (path: string) => {
-        router.push(`/${locale}/${path}`);
-        setIsMenuOpen(false);
-    };
-
+    // Active route detection — exact match for "/", prefix match for others
     const isActive = (href: string) => {
         if (href === "/") return pathname === "/";
         return pathname.startsWith(href);
@@ -200,13 +192,13 @@ export default function Navbar() {
                     <div className="flex shrink-0 items-center gap-1 sm:gap-3">
                         {/* Health Companion Trigger */}
                         <div className="group relative flex items-center">
-                            <button
-                                onClick={() => handleNavigation("health")}
+                            <Link
+                                href="/health"
                                 className="flex h-8 w-8 items-center justify-center rounded-full bg-linear-to-r from-blue-500 to-purple-500 text-white transition-all duration-200 hover:scale-105 hover:shadow-lg hover:shadow-purple-500/25 sm:h-10 sm:w-10"
                                 aria-label={tHome("open_ai_health_assistant")}
                             >
                                 <MessageCircle size={16} />
-                            </button>
+                            </Link>
                             <div className="pointer-events-none absolute top-full left-1/2 z-50 mt-2 -translate-x-1/2 rounded-md bg-slate-900 px-2 py-1 text-xs font-medium whitespace-nowrap text-white opacity-0 transition-all duration-200 group-hover:opacity-100">
                                 Health Companion
                             </div>
@@ -219,14 +211,14 @@ export default function Navbar() {
                         </div>
 
                         {/* Desktop Only Account Sign In */}
-                        <button
-                            onClick={() => handleNavigation("login")}
+                        <Link
+                            href="/login"
                             className="hidden h-9 items-center justify-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-50/50 px-4 py-1.5 text-sm font-bold text-emerald-700 transition-all duration-200 hover:scale-105 hover:border-emerald-500/50 hover:bg-emerald-100 sm:flex sm:h-10 sm:px-5 sm:py-2 dark:bg-emerald-500/10 dark:text-emerald-400 dark:hover:bg-emerald-500/20"
                             aria-label={tHome("sign_in")}
                         >
                             <User size={16} />
                             <span>{tHome("sign_in")}</span>
-                        </button>
+                        </Link>
 
                         {/* Mobile Only: Hamburger Toggle Menu Button */}
                         <div className="relative sm:hidden" ref={menuRef}>
@@ -244,13 +236,14 @@ export default function Navbar() {
                                 <div className="animate-in fade-in slide-in-from-top-2 absolute top-full right-0 z-50 mt-2 w-44 origin-top-right rounded-xl border border-slate-200 bg-white p-2 shadow-xl duration-150 dark:border-slate-800 dark:bg-slate-950">
                                     <div className="flex flex-col gap-1.5">
                                         {/* Added Sign In / Sign Up Option */}
-                                        <button
-                                            onClick={() => handleNavigation("login")}
+                                        <Link
+                                            href="/login"
+                                            onClick={() => setIsMenuOpen(false)}
                                             className="flex w-full items-center gap-2 rounded-lg bg-emerald-50 px-2.5 py-2 text-left text-xs font-bold text-emerald-700 transition-colors hover:bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-400 dark:hover:bg-emerald-950/70"
                                         >
                                             <LogIn size={14} />
                                             <span>{tHome("sign_in")}</span>
-                                        </button>
+                                        </Link>
 
                                         <div className="my-0.5 border-t border-slate-100 dark:border-slate-900" />
 
