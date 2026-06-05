@@ -140,8 +140,7 @@ def validate_linkedin_url(pr: dict) -> str:
             comment_snippet = "Your PR is approved for a LinkedIn shoutout!"
             comment_text = (
                 f"👋 {comment_snippet}\n"
-                f"Please **edit the PR description** to include your LinkedIn URL (Format: `https://linkedin.com/in/username`). "
-                f"Once you save the edit, the shoutout will trigger automatically."
+                f"Please **edit the PR description** to include your LinkedIn URL (Format: `https://linkedin.com/in/username`)."
             )
             if not check_if_commented(pr_number, comment_snippet):
                 os.system(f'gh pr comment {pr_number} --body "{comment_text}"')
