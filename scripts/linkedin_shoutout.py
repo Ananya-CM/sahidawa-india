@@ -334,15 +334,65 @@ def generate_post_with_gemini(pr: dict, tier_display: str, tier_desc: str) -> st
 
 
 def _static_fallback(pr: dict, tier_display: str) -> str:
-    return (
-        f"A massive thank you from the heart to our contributor, {pr['author']} ({pr['linkedin_url']}).\n\n"
-        f"They just landed PR #{pr['number']}: \"{pr['title']}\". "
-        f"This was a {tier_display} contribution, and the effort put into it is truly inspiring. "
-        f"Your work is directly helping {PROJECT_NAME} become a better platform for everyone. We deeply value your time and technical expertise. "
-        f"Keep crushing those issues, @{pr['author']}!\n\n"
-        f"If anyone else wants to make a real impact and join our open-source journey for GSSoC2026, we'd love to welcome you.\n\n"
-        f"Repo: {PROJECT_GITHUB_URL}\n"
-        f"View PR: {pr['url']}"
+    """
+    Generates a highly dynamic, heartfelt, and professional appreciation post
+    when the Gemini AI API hits its daily free-tier quota (429).
+    Deterministically rotates between distinct human-written layout formats.
+    """
+    templates = [
+        # Template 1: Focus on impact
+        (
+            "A huge shoutout to {author} ({linkedin_url}) for landing an outstanding {tier_display} contribution! 🚀\n\n"
+            "They just merged PR #{number}: \"{title}\". This optimization/feature represents significant engineering effort "
+            "and makes a direct impact on {project_name}'s mission to build India's open-source medicine safety platform. "
+            "We are incredibly grateful for your time, skill, and dedication to the community. Keep up the amazing work!\n\n"
+            "If you're inspired and want to build for India's digital health infrastructure, join us in GSSoC 2026! 🇮🇳\n\n"
+            "Explore the repository: {github_url}\n"
+            "View the contribution: {pr_url}"
+        ),
+        # Template 2: Heartfelt thank you
+        (
+            "Huge congratulations and thanks to {author} ({linkedin_url})! 🎉\n\n"
+            "Their merged PR #{number} (\"{title}\") is a major addition to {project_name}. "
+            "Designing and scaling {tier_desc} tasks takes true developer craftsmanship, and {author}'s work is a stellar example. "
+            "Thank you for helping us make medicine safety accessible to 1.4 billion Indians. We are thrilled to have you in our contributor community!\n\n"
+            "Ready to make a difference? GSSoC 2026 contributors are actively scaling {project_name}. Jump in now!\n\n"
+            "GitHub Repository: {github_url}\n"
+            "Check out the PR: {pr_url}"
+        ),
+        # Template 3: Direct community welcome
+        (
+            "Let's celebrate another landmark contribution by {author} ({linkedin_url})! 🌟\n\n"
+            "With PR #{number} (\"{title}\"), they tackled a {tier_display} task with exceptional skill. "
+            "Every line of code merged brings {project_name} closer to securing medicine health tracking for everyone. "
+            "Your hard work is deeply appreciated by the core maintainers. Keep shining and coding, @{author}!\n\n"
+            "Want to contribute to India's open-source stack? Join the GSSoC 2026 wave on our repo:\n\n"
+            "Codebase: {github_url}\n"
+            "Merged PR: {pr_url}"
+        )
+    ]
+    
+    # Deterministic rotation based on PR number to give variation
+    try:
+        pr_idx = int(pr.get("number", "0")) % len(templates)
+    except Exception:
+        pr_idx = 0
+        
+    selected_template = templates[pr_idx]
+    
+    labels = pr["labels"].lower()
+    tier_desc = "mission-critical" if "level:critical" in labels else "highly complex"
+    
+    return selected_template.format(
+        author=pr['author'],
+        linkedin_url=pr['linkedin_url'],
+        tier_display=tier_display,
+        tier_desc=tier_desc,
+        number=pr['number'],
+        title=pr['title'],
+        project_name=PROJECT_NAME,
+        github_url=PROJECT_GITHUB_URL,
+        pr_url=pr['url']
     )
 
 
@@ -377,9 +427,9 @@ def generate_and_upload_banner(pr: dict) -> str:
         # 1. Base image with gradient
         base = Image.new("RGBA", (width, height))
         pixels = base.load()
-        # Vibe: Sleek dark-mode tech background (indigo to deep violet)
-        left_color = (13, 14, 25)
-        right_color = (30, 16, 60)
+        # Vibe: Premium dark-mode tech background (deep midnight navy to cosmic purple)
+        left_color = (15, 16, 38)
+        right_color = (44, 22, 84)
         
         for x in range(width):
             r = int(left_color[0] + (right_color[0] - left_color[0]) * (x / width))
@@ -393,9 +443,9 @@ def generate_and_upload_banner(pr: dict) -> str:
         # Add abstract glowing background blobs
         glow_layer = Image.new("RGBA", (width, height), (0, 0, 0, 0))
         glow_draw = ImageDraw.Draw(glow_layer)
-        glow_draw.ellipse((800, -200, 1400, 400), fill=(235, 122, 38, 30))  # Orange GSSoC glow
-        glow_draw.ellipse((-100, 300, 400, 800), fill=(100, 50, 255, 25))  # Indigo glow
-        glow_layer = glow_layer.filter(ImageFilter.GaussianBlur(80))
+        glow_draw.ellipse((850, -150, 1350, 350), fill=(235, 122, 38, 35))  # Warm GSSoC Orange glow
+        glow_draw.ellipse((-150, 250, 350, 750), fill=(120, 60, 255, 30))   # Purple glow
+        glow_layer = glow_layer.filter(ImageFilter.GaussianBlur(90))
         base = Image.alpha_composite(base, glow_layer)
         draw = ImageDraw.Draw(base)
 
@@ -410,11 +460,9 @@ def generate_and_upload_banner(pr: dict) -> str:
             font_badge = ImageFont.truetype(BytesIO(bold_font_data), 26)
             font_title = ImageFont.truetype(BytesIO(bold_font_data), 54)
             font_body = ImageFont.truetype(BytesIO(reg_font_data), 32)
-            font_repo = ImageFont.truetype(BytesIO(bold_font_data), 24)
-            font_tagline = ImageFont.truetype(BytesIO(reg_font_data), 20)
         except Exception as fe:
             print(f"⚠️ Font download failed ({fe}), using default fonts")
-            font_badge = font_title = font_body = font_repo = font_tagline = ImageFont.load_default()
+            font_badge = font_title = font_body = ImageFont.load_default()
 
         # 3. Contributor Avatar
         avatar_url = pr.get("author_avatar")
@@ -448,7 +496,7 @@ def generate_and_upload_banner(pr: dict) -> str:
         mask_draw = ImageDraw.Draw(mask)
         mask_draw.ellipse((0, 0, 200, 200), fill=255)
         
-        # Draw avatar borders/rings on base image
+        # Draw avatar borders/rings on base image (Vertically Centered)
         draw.ellipse((85, 200, 315, 430), outline=(235, 122, 38, 255), width=8)  # Orange border
         draw.ellipse((92, 207, 308, 423), outline=(255, 215, 0, 255), width=3)   # Gold inner ring
         
@@ -456,7 +504,7 @@ def generate_and_upload_banner(pr: dict) -> str:
         avatar_img.paste(avatar, (0, 0), mask=mask)
         base.paste(avatar_img, (100, 215), mask=avatar_img)
 
-        # 4. Text Content (Right column, starting X = 360)
+        # 4. Text Content (Right column, starting X = 360, Vertically Centered)
         # GSSoC Badge Pill (Emoji-free)
         badge_text = "GSSoC 2026 Star Contributor"
         try:
@@ -469,7 +517,7 @@ def generate_and_upload_banner(pr: dict) -> str:
         badge_padding_x, badge_padding_y = 20, 10
         badge_w = tw + badge_padding_x * 2
         badge_h = th + badge_padding_y * 2
-        badge_x, badge_y = 360, 120
+        badge_x, badge_y = 360, 175
         
         draw.rounded_rectangle(
             [badge_x, badge_y, badge_x + badge_w, badge_y + badge_h],
@@ -480,9 +528,17 @@ def generate_and_upload_banner(pr: dict) -> str:
         )
         draw.text((badge_x + badge_padding_x, badge_y + badge_padding_y - 2), badge_text, fill=(255, 255, 255, 255), font=font_badge)  # High-contrast white text
 
-        # Headline (Emoji-free)
-        headline_text = f"Huge thanks, @{pr['author']}!"
-        draw.text((360, 195), headline_text, fill=(255, 255, 255, 255), font=font_title)
+        # Headline (Emoji-free & username highlighted in gold/orange)
+        prefix = "Huge thanks, "
+        username = f"@{pr['author']}!"
+        try:
+            p_bbox = draw.textbbox((0, 0), prefix, font=font_title)
+            p_w = p_bbox[2] - p_bbox[0]
+        except Exception:
+            p_w = 320
+            
+        draw.text((360, 250), prefix, fill=(255, 255, 255, 255), font=font_title)
+        draw.text((360 + p_w, 250), username, fill=(255, 165, 0, 255), font=font_title)
 
         # Body appreciation text
         body_line1 = "For making outstanding contributions to SahiDawa."
@@ -492,31 +548,8 @@ def generate_and_upload_banner(pr: dict) -> str:
             pr_title = pr_title[:max_title_len].strip() + "..."
         body_line2 = f"Merged PR #{pr['number']}: \"{pr_title}\""
         
-        draw.text((360, 280), body_line1, fill=(200, 200, 220, 255), font=font_body)
-        draw.text((360, 330), body_line2, fill=(255, 215, 0, 255), font=font_body)
-
-        # 5. Project Logo & Info in footer
-        logo_url = "https://avatars.githubusercontent.com/u/244338981"
-        try:
-            lr = requests.get(logo_url, timeout=5)
-            if lr.status_code == 200:
-                logo = Image.open(BytesIO(lr.content)).convert("RGBA")
-                logo = logo.resize((80, 80), Image.Resampling.LANCZOS)
-                logo_mask = Image.new("L", (80, 80), 0)
-                logo_mask_draw = ImageDraw.Draw(logo_mask)
-                logo_mask_draw.ellipse((0, 0, 80, 80), fill=255)
-                
-                # Draw logo ring
-                draw.ellipse((1015, 475, 1105, 565), outline=(255, 255, 255, 200), width=4)
-                
-                logo_img = Image.new("RGBA", (80, 80), (0, 0, 0, 0))
-                logo_img.paste(logo, (0, 0), mask=logo_mask)
-                base.paste(logo_img, (1020, 480), mask=logo_img)
-        except Exception as le:
-            print(f"⚠️ SahiDawa logo render skipped: {le}")
-
-        draw.text((360, 485), "SahiDawa / RatLoopz", fill=(255, 255, 255, 255), font=font_repo)
-        draw.text((360, 520), "India's open-source medicine safety platform", fill=(150, 150, 170, 255), font=font_tagline)
+        draw.text((360, 335), body_line1, fill=(200, 200, 220, 255), font=font_body)
+        draw.text((360, 385), body_line2, fill=(255, 215, 0, 255), font=font_body)
 
         # Save buffer
         img_buffer = BytesIO()
