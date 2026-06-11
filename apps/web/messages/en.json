@@ -782,6 +782,27 @@
         "phoneInvalid": "Please enter a valid 10-digit Indian phone number.",
         "districtRequired": "Please specify a district to get localized warnings."
     },
+    "Interactions": {
+        "title": "Medicine Interaction Checker",
+        "subtitle": "Check potential harmful interactions between multiple medications",
+        "searchLabel": "Search Medicine",
+        "searchPlaceholder": "Enter brand name or generic name...",
+        "addButton": "Add",
+        "checkButton": "Check Interactions",
+        "myMedicines": "My Medicines List",
+        "noMedicines": "No medicines added to your check list yet.",
+        "clearAll": "Clear All",
+        "resultsHeading": "Interaction Report",
+        "noInteractions": "All clear! No interactions detected between selected medicines.",
+        "severityCritical": "Critical Alert",
+        "severitySerious": "Serious Warning",
+        "severityModerate": "Moderate Caution",
+        "severityMinor": "Minor Precaution",
+        "clinicalRecommendation": "Clinical Recommendation:",
+        "mechanism": "Mechanism:",
+        "source": "Source:",
+        "errorMessage": "Failed to complete interaction check. Please try again."
+    },
     "ScanHistory": {
         "export_modal_title": "Export Scan History",
         "export_range_label": "Select Date Range",

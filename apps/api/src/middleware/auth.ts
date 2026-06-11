@@ -43,45 +43,21 @@ const extractToken = (req: Request): string | null => {
     return null;
 };
 
-/**
- * Decode JWT token loosely for local development when Supabase auth server is offline.
- * Extracts the user ID (sub), email, and roles/metadata from the token payload.
- */
-function decodeJwtLoosely(token: string): AuthenticatedUser | null {
-    try {
-        const parts = token.split(".");
-        if (parts.length !== 3) return null;
-
-        const base64Url = parts[1];
-        const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-        const payloadJson = Buffer.from(base64, "base64").toString("utf-8");
-        const payload = JSON.parse(payloadJson);
-
-        if (payload.exp && Date.now() / 1000 > payload.exp) {
-            logger.warn("Loose JWT verification: Token is expired");
-            return null;
-        }
-
-        const role = payload.app_metadata?.role || payload.user_metadata?.role || "user";
-
-        return {
-            id: payload.sub || "mock-user-id",
-            email: payload.email,
-            role: role as AuthRole,
-            raw: {
-                id: payload.sub || "mock-user-id",
-                email: payload.email,
-                app_metadata: payload.app_metadata || {},
-                user_metadata: payload.user_metadata || {},
-                aud: payload.aud || "authenticated",
-                created_at: new Date().toISOString(),
-            } as User,
-        };
-    } catch (err) {
-        logger.error({ message: "Failed to loosely decode JWT", error: err });
-        return null;
-    }
-}
+const getMockUser = (): AuthenticatedUser => {
+    return {
+        id: process.env.MOCK_USER_ID || "mock-user-id",
+        email: process.env.MOCK_USER_EMAIL || "mock@sahidawa.local",
+        role: (process.env.MOCK_USER_ROLE as AuthRole) || "admin",
+        raw: {
+            id: process.env.MOCK_USER_ID || "mock-user-id",
+            email: process.env.MOCK_USER_EMAIL || "mock@sahidawa.local",
+            app_metadata: { role: process.env.MOCK_USER_ROLE || "admin" },
+            user_metadata: {},
+            aud: "authenticated",
+            created_at: new Date().toISOString(),
+        } as User,
+    };
+};
 
 export const createAuthMiddleware =
     (client: SupabaseAuthClient = supabase) =>
@@ -94,12 +70,14 @@ export const createAuthMiddleware =
         }
 
         if (dbConfig?.isSupabaseOffline) {
-            const decoded = decodeJwtLoosely(token);
-            if (decoded) {
-                req.user = decoded;
+            if (
+                process.env.NODE_ENV === "development" &&
+                process.env.BYPASS_AUTH_FOR_TESTING === "true"
+            ) {
+                req.user = getMockUser();
                 next();
             } else {
-                res.status(401).json({ error: "Unauthorized: Invalid or expired token" });
+                res.status(401).json({ error: "Unauthorized: Authentication service is offline" });
             }
             return;
         }
@@ -117,13 +95,14 @@ export const createAuthMiddleware =
                 if (isConnectionError) {
                     if (dbConfig) dbConfig.isSupabaseOffline = true;
                     logger.warn({
-                        message:
-                            "Supabase auth server returned connection error. Setting isSupabaseOffline=true and attempting local loose JWT decoding fallback.",
+                        message: "Supabase auth server returned connection error.",
                         error: error.message,
                     });
-                    const decoded = decodeJwtLoosely(token);
-                    if (decoded) {
-                        req.user = decoded;
+                    if (
+                        process.env.NODE_ENV === "development" &&
+                        process.env.BYPASS_AUTH_FOR_TESTING === "true"
+                    ) {
+                        req.user = getMockUser();
                         next();
                         return;
                     }
@@ -157,18 +136,19 @@ export const createAuthMiddleware =
             }
 
             logger.warn({
-                message:
-                    "Supabase auth server request failed. Attempting local loose JWT decoding fallback.",
+                message: "Supabase auth server request failed.",
                 error: errMsg,
             });
 
-            const decoded = decodeJwtLoosely(token);
-            if (decoded) {
-                req.user = decoded;
+            if (
+                process.env.NODE_ENV === "development" &&
+                process.env.BYPASS_AUTH_FOR_TESTING === "true"
+            ) {
+                req.user = getMockUser();
                 next();
             } else {
                 res.status(401).json({
-                    error: "Unauthorized: Authentication service unavailable and token invalid",
+                    error: "Unauthorized: Authentication service unavailable",
                 });
             }
         }
@@ -186,9 +166,11 @@ export const createOptionalAuthMiddleware =
         }
 
         if (dbConfig?.isSupabaseOffline) {
-            const decoded = decodeJwtLoosely(token);
-            if (decoded) {
-                req.user = decoded;
+            if (
+                process.env.NODE_ENV === "development" &&
+                process.env.BYPASS_AUTH_FOR_TESTING === "true"
+            ) {
+                req.user = getMockUser();
             }
             return next();
         }
@@ -206,13 +188,14 @@ export const createOptionalAuthMiddleware =
                 if (isConnectionError) {
                     if (dbConfig) dbConfig.isSupabaseOffline = true;
                     logger.warn({
-                        message:
-                            "Supabase auth server returned connection error. Setting isSupabaseOffline=true and attempting local loose JWT decoding fallback.",
+                        message: "Supabase auth server returned connection error.",
                         error: error.message,
                     });
-                    const decoded = decodeJwtLoosely(token);
-                    if (decoded) {
-                        req.user = decoded;
+                    if (
+                        process.env.NODE_ENV === "development" &&
+                        process.env.BYPASS_AUTH_FOR_TESTING === "true"
+                    ) {
+                        req.user = getMockUser();
                     }
                     next();
                     return;
@@ -250,14 +233,15 @@ export const createOptionalAuthMiddleware =
             }
 
             logger.warn({
-                message:
-                    "Supabase optional auth server request failed. Attempting local loose JWT decoding fallback.",
+                message: "Supabase optional auth server request failed.",
                 error: errMsg,
             });
 
-            const decoded = decodeJwtLoosely(token);
-            if (decoded) {
-                req.user = decoded;
+            if (
+                process.env.NODE_ENV === "development" &&
+                process.env.BYPASS_AUTH_FOR_TESTING === "true"
+            ) {
+                req.user = getMockUser();
             }
             next();
         }
