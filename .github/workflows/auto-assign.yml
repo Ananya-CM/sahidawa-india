@@ -98,13 +98,13 @@ jobs:
                   await github.rest.issues.createComment({
                     owner: repo.owner, repo: repo.repo, issue_number: issueNumber,
                     body: [
-                      '🚨 **Automated Assignment Guard** 🚨',
+                      '🚨 **Assignment Denied** 🚨',
                       '',
-                      `@${newlyAssignedUser} has been automatically unassigned from this issue because they already have 3 or more active assignments.`,
-                      `Active tasks without open PRs:`,
+                      `@${newlyAssignedUser}, you have been automatically unassigned. You have reached the maximum limit of 3 active assignments.`,
+                      `Your current open tasks:`,
                       `- ${issueList}`,
                       '',
-                      '> **Note:** To ensure a fair environment, contributors must complete their current tasks (by opening a PR) before taking on new ones.'
+                      'Complete these tasks and open PRs before claiming new ones. This rule is strictly enforced to ensure fair opportunity for all contributors.'
                     ].join('\n')
                   });
                 }
