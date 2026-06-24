@@ -5,7 +5,7 @@ import { redis } from "@/lib/redis";
 const CACHE_TTL = 24 * 60 * 60;
 
 function escapePostgres(val: string) {
-    return val.replace(/[%_]/g, "\\$&");
+    return val.replace(/[\\%_]/g, "\\$&");
 }
 
 export async function GET(request: NextRequest) {
