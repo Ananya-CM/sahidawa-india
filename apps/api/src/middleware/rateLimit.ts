@@ -201,3 +201,17 @@ export const trackingLimiter = rateLimit({
         });
     },
 });
+
+export const webhookLimiter = rateLimit({
+    skip: () => process.env.NODE_ENV === "test",
+    windowMs: 60 * 1000, // 1 minute
+    max: 10,
+    standardHeaders: true,
+    legacyHeaders: false,
+    store: buildStore("webhook"),
+    handler: (_req, res) => {
+        res.status(429).json({
+            error: "Too many webhook requests. Please try again later.",
+        });
+    },
+});

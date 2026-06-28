@@ -1,6 +1,8 @@
 import { Router, Request, Response } from "express";
 import { redisClient } from "../utils/redis";
 import logger from "../utils/logger";
+import { webhookLimiter } from "../middleware/rateLimit";
+import { createRateLimitMiddleware } from "../middleware/rateLimit";
 
 const router = Router();
 
@@ -14,6 +16,7 @@ const router = Router();
  */
 router.post(
     "/supabase/health-schemes",
+    webhookLimiter,
     async (req: Request, res: Response): Promise<void> => {
         // Verify secret token
         const secret = process.env.SUPABASE_WEBHOOK_SECRET;
