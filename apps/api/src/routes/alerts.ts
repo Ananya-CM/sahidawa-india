@@ -6,6 +6,9 @@ import { validateMedicineStatus, getValidStatusList } from "../validators/medici
 import { escapeIlike } from "../utils/db";
 import { requireApiKey, ApiKeyRequest } from "../middleware/apiKeyAuth";
 import logger from "../utils/logger";
+import { redisClient } from "../utils/redis";
+import { KEY_PREFIXES } from "../services/cache.service";
+import { limiter } from "../middleware/rateLimit";
 
 const AlertSchema = z
     .object({
@@ -16,6 +19,7 @@ const AlertSchema = z
         state: z.string().optional(),
         district: z.string().optional(),
         reported_at: z.string().optional(),
+        proof_image_url: z.string().optional().nullable(),
     })
     .passthrough();
 
@@ -94,7 +98,7 @@ alertsRouter.get("/", async (req: Request, res: Response) => {
  * POST /api/v1/alerts/ingest
  * Protected endpoint to ingest parsed CDSCO alerts from the ML agent.
  */
-alertsRouter.post("/ingest", requireApiKey, async (req: ApiKeyRequest, res: Response) => {
+alertsRouter.post("/ingest", requireApiKey, limiter, async (req: ApiKeyRequest, res: Response) => {
     const { alerts } = req.body;
     const parseResult = AlertsArraySchema.safeParse(alerts);
     if (!parseResult.success) {
@@ -105,10 +109,14 @@ alertsRouter.post("/ingest", requireApiKey, async (req: ApiKeyRequest, res: Resp
     const validatedAlerts = parseResult.data;
 
     try {
-        // 2. Insert alerts into drug_alerts table
+        // 2. Upsert alerts — ON CONFLICT DO NOTHING prevents duplicate rows
+        // when concurrent scraper instances race past the pre-check in deduplicate_alerts().
         const { data: insertedAlerts, error: insertError } = await supabase
             .from("drug_alerts")
-            .insert(validatedAlerts)
+            .upsert(validatedAlerts, {
+                onConflict: "batch_number,manufacturer,reported_brand_name",
+                ignoreDuplicates: true,
+            })
             .select();
 
         if (insertError) {
@@ -144,6 +152,22 @@ alertsRouter.post("/ingest", requireApiKey, async (req: ApiKeyRequest, res: Resp
         });
 
         await Promise.all(updatePromises);
+
+        // 3.5 Invalidate the cache for the updated batch numbers
+        const batchNumbersToInvalidate = validatedAlerts
+            .map((alert) => alert.batch_number)
+            .filter(Boolean) as string[];
+
+        if (batchNumbersToInvalidate.length > 0 && redisClient.isOpen) {
+            try {
+                const keys = batchNumbersToInvalidate.map(
+                    (batch) => `${KEY_PREFIXES.DRUG_CACHE}${batch}`
+                );
+                await redisClient.del(keys);
+            } catch (err) {
+                console.error("Failed to invalidate cache for alert batches:", err);
+            }
+        }
 
         // 4. Dispatch Web Push Notifications using shared service
         if (insertedAlerts && insertedAlerts.length > 0) {

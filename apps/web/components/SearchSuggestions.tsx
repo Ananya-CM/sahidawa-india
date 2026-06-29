@@ -1,41 +1,33 @@
 "use client";
 
-import React from "react";
-import { Search } from "lucide-react";
+import React, { useRef, useEffect } from "react";
+import { Search, Clock, Pin, X } from "lucide-react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 
-export interface SearchSuggestionsProps {
-    /** The list of suggestion strings to display */
-    suggestions: string[];
-    /** The index of the currently keyboard-highlighted suggestion (-1 = none) */
-    activeIndex: number;
-    /** Called when a suggestion is clicked or selected via keyboard */
-    onSelect: (value: string) => void;
-    /** Whether the dropdown should be visible */
-    visible: boolean;
-    /** Whether suggestions are currently being loaded */
-    isLoading?: boolean;
-    /** An error message to display if loading suggestions failed */
-    error?: string | null;
-    /** Whether to show a "No results" message when there are no suggestions */
-    noResults?: boolean;
-    /** Called when the user clicks "Retry" after an error */
-    onRetry?: () => void;
+export interface HistoryItem {
+    query: string;
+    pinned: boolean;
+    timestamp: number;
 }
 
-/**
- * SearchSuggestions
- *
- * A purely presentational dropdown list that appears below a search input.
- *  * It renders loading, error, empty-state, or suggestion results
- * depending on the current search state.
- 
- * Accessibility notes:
- *  - role="listbox" on the `<ul>` and role="option" on each `<li>`
- *  - aria-selected marks the active (keyboard-highlighted) item
- *  - id attributes are referenced by the parent input via aria-controls /
- *    aria-activedescendant (wired up in SearchBar)
- */
-export default function SearchSuggestions({
+export interface SearchSuggestionsProps {
+    suggestions: string[];
+    activeIndex: number;
+    onSelect: (value: string) => void;
+    visible: boolean;
+    isLoading?: boolean;
+    error?: string | null;
+    noResults?: boolean;
+    onRetry?: () => void;
+    isHistory?: boolean;
+    historyItems?: HistoryItem[];
+    onPinToggle?: (query: string) => void;
+    onClearHistory?: () => void;
+    onDeleteItem?: (query: string) => void;
+    query?: string;
+}
+
+function SearchSuggestions({
     suggestions,
     activeIndex,
     onSelect,
@@ -44,11 +36,56 @@ export default function SearchSuggestions({
     error = null,
     noResults = false,
     onRetry,
+    isHistory = false,
+    historyItems = [],
+    onPinToggle,
+    onClearHistory,
+    onDeleteItem,
+    query = "",
 }: SearchSuggestionsProps) {
-    if (!visible && !isLoading && !error && !noResults) {
-        return null;
+    const parentRef = useRef<HTMLUListElement>(null);
+
+    function highlightMatch(text: string, query: string) {
+        if (!query) return text;
+        const lowerText = text.toLowerCase();
+        const lowerQuery = query.toLowerCase();
+        const matchIndex = lowerText.indexOf(lowerQuery);
+        if (matchIndex === -1) return text;
+
+        const before = text.slice(0, matchIndex);
+        const match = text.slice(matchIndex, matchIndex + query.length);
+        const after = text.slice(matchIndex + query.length);
+
+        return (
+            <>
+                {before}
+                <strong className="font-bold text-emerald-600 dark:text-emerald-400">
+                    {match}
+                </strong>
+                {after}
+            </>
+        );
     }
-    // Show error message if there was an error loading suggestions
+
+    const items = isHistory ? historyItems : suggestions;
+
+    const virtualizer = useVirtualizer({
+        count: items.length,
+        getScrollElement: () => parentRef.current,
+        estimateSize: () => 48,
+        overscan: 5,
+    });
+
+    // Scroll active item into view on keyboard navigation
+    useEffect(() => {
+        if (activeIndex >= 0 && activeIndex < items.length) {
+            virtualizer.scrollToIndex(activeIndex, { align: "auto" });
+        }
+    }, [activeIndex, items.length, virtualizer]);
+
+    if (!visible && !isLoading && !error && !noResults) return null;
+    if (isHistory && (!historyItems || historyItems.length === 0)) return null;
+
     if (isLoading) {
         return (
             <div className="absolute top-full right-0 left-0 z-50 mt-2 rounded-2xl border border-slate-200 bg-white p-4 shadow-xl">
@@ -59,12 +96,11 @@ export default function SearchSuggestions({
             </div>
         );
     }
-    // Show error message if there was an error loading suggestions
+
     if (error) {
         return (
             <div className="absolute top-full right-0 left-0 z-50 mt-2 rounded-2xl border border-red-200 bg-white p-4 shadow-xl">
                 <p className="mb-3 text-sm text-red-600">{error}</p>
-
                 {onRetry && (
                     <button
                         type="button"
@@ -77,7 +113,7 @@ export default function SearchSuggestions({
             </div>
         );
     }
-    // Show "No results" message if there are no suggestions
+
     if (noResults) {
         return (
             <div className="absolute top-full right-0 left-0 z-50 mt-2 rounded-2xl border border-slate-200 bg-white p-4 shadow-xl">
@@ -90,41 +126,161 @@ export default function SearchSuggestions({
 
     return (
         <ul
+            ref={parentRef}
             id="search-suggestions-listbox"
             role="listbox"
             aria-label="Search suggestions"
-            className="animate-in fade-in slide-in-from-top-2 absolute top-full right-0 left-0 z-50 mt-2 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-200/60 duration-150"
+            className="absolute top-full right-0 left-0 z-50 mt-2 max-h-72 overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-200/60"
         >
-            {suggestions.map((suggestion, index) => {
-                const isActive = index === activeIndex;
-                return (
-                    <li
-                        key={`${suggestion}-${index}`}
-                        id={`search-suggestion-${index}`}
-                        role="option"
-                        aria-selected={isActive}
-                        onMouseDown={(e) => {
-                            // Use mousedown instead of click to fire before the input's
-                            // onBlur, which would otherwise close the list first.
-                            e.preventDefault();
-                            onSelect(suggestion);
-                        }}
-                        className={`flex cursor-pointer items-center gap-3 px-5 py-3 text-sm font-medium transition-colors duration-100 ${
-                            isActive
-                                ? "bg-emerald-50 text-emerald-700"
-                                : "text-slate-700 hover:bg-slate-50"
-                        } first:rounded-t-2xl last:rounded-b-2xl`}
+            {isHistory ? (
+                <>
+                    {/* Sticky header — outside virtualizer so it's always visible */}
+                    <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-100 bg-slate-50/50 px-5 py-2.5 text-[11px] font-bold tracking-wider text-slate-400 uppercase select-none">
+                        <span>Recent Searches</span>
+                        <button
+                            type="button"
+                            onMouseDown={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                onClearHistory?.();
+                            }}
+                            className="text-red-500 transition-colors hover:text-red-600 focus:outline-none"
+                        >
+                            Clear All
+                        </button>
+                    </div>
+
+                    {/* Virtualizer container */}
+                    <div
+                        style={{ height: `${virtualizer.getTotalSize()}px`, position: "relative" }}
                     >
-                        <Search
-                            size={14}
-                            className={`shrink-0 ${isActive ? "text-emerald-500" : "text-slate-400"}`}
-                            aria-hidden="true"
-                        />
-                        {/* Preserve exact string; parent can highlight matched portion if needed */}
-                        <span className="truncate">{suggestion}</span>
-                    </li>
-                );
-            })}
+                        {virtualizer.getVirtualItems().map((virtualItem) => {
+                            const item = historyItems[virtualItem.index];
+                            const isActive = virtualItem.index === activeIndex;
+                            return (
+                                <li
+                                    key={`${item.query}-${virtualItem.index}`}
+                                    id={`search-suggestion-${virtualItem.index}`}
+                                    role="option"
+                                    aria-selected={isActive}
+                                    data-index={virtualItem.index}
+                                    ref={virtualizer.measureElement}
+                                    onMouseDown={(e) => {
+                                        e.preventDefault();
+                                        onSelect(item.query);
+                                    }}
+                                    style={{
+                                        position: "absolute",
+                                        top: 0,
+                                        left: 0,
+                                        width: "100%",
+                                        transform: `translateY(${virtualItem.start}px)`,
+                                    }}
+                                    className={`group flex cursor-pointer items-center justify-between px-5 py-3 text-sm font-medium transition-colors duration-100 ${
+                                        isActive
+                                            ? "bg-emerald-50 text-emerald-700"
+                                            : "text-slate-700 hover:bg-slate-50"
+                                    }`}
+                                >
+                                    {/* Left: clock + label */}
+                                    <div className="flex min-w-0 items-center gap-3">
+                                        <Clock
+                                            size={14}
+                                            className={`shrink-0 ${isActive ? "text-emerald-500" : "text-slate-400"}`}
+                                            aria-hidden="true"
+                                        />
+                                        <span className="truncate">{item.query}</span>
+                                    </div>
+
+                                    {/* Right: pin + delete */}
+                                    <div className="flex shrink-0 items-center">
+                                        <button
+                                            type="button"
+                                            onMouseDown={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                onPinToggle?.(item.query);
+                                            }}
+                                            className={`rounded p-1 transition-colors hover:bg-slate-200/50 ${
+                                                item.pinned
+                                                    ? "text-emerald-500"
+                                                    : "text-slate-300 opacity-0 group-hover:opacity-100"
+                                            }`}
+                                            aria-label={
+                                                item.pinned
+                                                    ? "Unpin search query"
+                                                    : "Pin search query"
+                                            }
+                                        >
+                                            <Pin
+                                                size={14}
+                                                className={item.pinned ? "fill-emerald-500" : ""}
+                                            />
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            onMouseDown={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                onDeleteItem?.(item.query);
+                                            }}
+                                            className="rounded p-1 text-slate-300 opacity-0 transition-colors group-hover:opacity-100 hover:bg-red-50 hover:text-red-400"
+                                            aria-label="Remove from history"
+                                        >
+                                            <X size={14} />
+                                        </button>
+                                    </div>
+                                </li>
+                            );
+                        })}
+                    </div>
+                </>
+            ) : (
+                <div style={{ height: `${virtualizer.getTotalSize()}px`, position: "relative" }}>
+                    {virtualizer.getVirtualItems().map((virtualItem) => {
+                        const suggestion = suggestions[virtualItem.index];
+                        const isActive = virtualItem.index === activeIndex;
+                        return (
+                            <li
+                                key={`${suggestion}-${virtualItem.index}`}
+                                id={`search-suggestion-${virtualItem.index}`}
+                                role="option"
+                                aria-selected={isActive}
+                                data-index={virtualItem.index}
+                                ref={virtualizer.measureElement}
+                                onMouseDown={(e) => {
+                                    e.preventDefault();
+                                    onSelect(suggestion);
+                                }}
+                                style={{
+                                    position: "absolute",
+                                    top: 0,
+                                    left: 0,
+                                    width: "100%",
+                                    transform: `translateY(${virtualItem.start}px)`,
+                                }}
+                                className={`flex cursor-pointer items-center gap-3 px-5 py-3 text-sm font-medium transition-colors duration-100 ${
+                                    isActive
+                                        ? "bg-emerald-50 text-emerald-700"
+                                        : "text-slate-700 hover:bg-slate-50"
+                                }`}
+                            >
+                                <Search
+                                    size={14}
+                                    className={`shrink-0 ${isActive ? "text-emerald-500" : "text-slate-400"}`}
+                                    aria-hidden="true"
+                                />
+                                <span className="truncate">
+                                    {highlightMatch(suggestion, query)}
+                                </span>
+                            </li>
+                        );
+                    })}
+                </div>
+            )}
         </ul>
     );
 }
+
+export default React.memo(SearchSuggestions);

@@ -1,6 +1,12 @@
-import { Router } from "express";
+import express, { Router } from "express";
 import { z } from "zod";
-import { requireAuth, requireRole, AuthenticatedRequest } from "../middleware/auth";
+import { requireAuth, requireRole, optionalAuth, AuthenticatedRequest } from "../middleware/auth";
+import { notificationRegisterLimiter } from "../middleware/rateLimit";
+import { verifyTwilioSignature } from "../middleware/twilioSignature";
+import { supabase, dbConfig } from "../db/client";
+import { smsService } from "../services/sms-service";
+import { whatsappService } from "../services/whatsapp-service";
+import logger from "../utils/logger";
 import {
     getMockRecallFeed,
     getVapidPublicKey,
@@ -13,6 +19,8 @@ import {
 } from "../services/notifications";
 
 const router = Router();
+
+// ── Web Push Notifications (Existing) ──────────────────────────────────────────
 
 const unsubscribeSchema = z.object({
     endpoint: z.string().url(),
@@ -98,5 +106,784 @@ router.post("/recalls/mock/trigger", requireAuth, requireRole("admin"), async (r
         delivery: result,
     });
 });
+
+// ── SMS & WhatsApp Alert Integration (New) ─────────────────────────────────────
+
+const registerSchema = z.object({
+    phone: z.string().min(10, "Phone number too short").max(20, "Phone number too long"),
+    channels: z.array(z.enum(["sms", "whatsapp"])).min(1, "At least one channel is required"),
+    language: z.string().default("en"),
+    district: z.string().min(2, "District is required"),
+});
+
+const updatePhoneSchema = z.object({
+    phone: z.string().min(10).max(20),
+    newPhone: z.string().min(10).max(20).optional(),
+    channels: z.array(z.enum(["sms", "whatsapp"])).optional(),
+    language: z.string().optional(),
+    district: z.string().optional(),
+    is_active: z.boolean().optional(),
+});
+
+const twilioWebhookSchema = z.object({
+    From: z
+        .string()
+        .min(10, "From number too short")
+        .max(20, "From number too long")
+        .regex(/^\+?\d+$/, "From must contain only digits and an optional leading +"),
+    Body: z.string().optional(),
+});
+
+const deletePhoneSchema = z.object({
+    phone: z.string().min(10).max(20).optional(),
+});
+
+import { formatPhoneNumber } from "../utils/phone"; // Local in-memory fallback store for development when Supabase is offline
+interface InMemorySubscriber {
+    id: string;
+    user_id: string | null;
+    phone: string;
+    channels: ("sms" | "whatsapp")[];
+    language: string;
+    district: string;
+    is_active: boolean;
+    status: string;
+    verification_otp: string | null;
+    otp_expires_at: string | null;
+    created_at: string;
+    updated_at: string;
+}
+
+// Global flag to track Supabase offline status and skip connection retries instantly
+// (Live view of dbConfig.isSupabaseOffline is read directly inside request handlers)
+const memorySubscribers = new Map<string, InMemorySubscriber>();
+
+router.get("/status", optionalAuth, async (req: AuthenticatedRequest, res) => {
+    try {
+        let phone: string | undefined = undefined;
+        if (req.query.phone) {
+            const formatted = formatPhoneNumber(req.query.phone as string);
+            if (!formatted) {
+                res.status(400).json({ error: "Invalid phone number format" });
+                return;
+            }
+            phone = formatted;
+        }
+        let query = supabase.from("notification_subscribers").select("*");
+
+        if (req.user) {
+            query = query.eq("user_id", req.user.id);
+        } else if (phone) {
+            query = query.eq("phone", phone);
+        } else {
+            res.json({ registered: false });
+            return;
+        }
+
+        let subscriber = null;
+        let dbFailed = dbConfig?.isSupabaseOffline;
+
+        if (!dbFailed) {
+            try {
+                const { data, error } = await query.maybeSingle();
+                if (error) {
+                    dbFailed = true;
+                    if (
+                        error.message?.includes("fetch failed") ||
+                        error.message?.includes("refused") ||
+                        error.message?.includes("timeout")
+                    ) {
+                        if (dbConfig) dbConfig.setOffline();
+                    }
+                } else {
+                    subscriber = data;
+                }
+            } catch (dbError: any) {
+                dbFailed = true;
+                const msg = dbError?.message || String(dbError);
+                if (
+                    msg.includes("fetch failed") ||
+                    msg.includes("refused") ||
+                    msg.includes("timeout")
+                ) {
+                    if (dbConfig) dbConfig.setOffline();
+                }
+            }
+        }
+
+        if (dbFailed) {
+            logger.warn(
+                "Supabase database is offline. Falling back to in-memory subscription store."
+            );
+            if (req.user) {
+                subscriber = Array.from(memorySubscribers.values()).find(
+                    (s) => s.user_id === req.user!.id
+                );
+            } else if (phone) {
+                subscriber = memorySubscribers.get(phone);
+            }
+        }
+
+        if (!subscriber) {
+            res.json({ registered: false });
+            return;
+        }
+
+        res.json({ registered: true, subscriber });
+    } catch (err) {
+        logger.error({ message: "Error in /status endpoint", error: err });
+        res.status(500).json({ error: "Internal server error" });
+    }
+});
+
+router.post(
+    "/register",
+    notificationRegisterLimiter,
+    optionalAuth,
+    async (req: AuthenticatedRequest, res) => {
+        const parsed = registerSchema.safeParse(req.body);
+        if (!parsed.success) {
+            res.status(400).json({
+                error: "Invalid registration payload",
+                issues: parsed.error.issues,
+            });
+            return;
+        }
+
+        const { phone, channels, language, district } = parsed.data;
+        const formattedPhone = formatPhoneNumber(phone);
+        if (!formattedPhone) {
+            res.status(400).json({ error: "Invalid phone number format" });
+            return;
+        }
+
+        const isOwner =
+            req.user &&
+            (req.user.raw?.phone === formattedPhone ||
+                req.user.raw?.user_metadata?.phone === formattedPhone);
+
+        const targetStatus = isOwner ? "active" : "pending";
+        const otp = isOwner ? null : Math.floor(100000 + Math.random() * 900000).toString();
+        const otpExpires = isOwner ? null : new Date(Date.now() + 10 * 60 * 1000).toISOString();
+
+        try {
+            let existing = null;
+            let dbFailed = dbConfig?.isSupabaseOffline;
+
+            if (!dbFailed) {
+                try {
+                    const { data, error: findError } = await supabase
+                        .from("notification_subscribers")
+                        .select("*")
+                        .eq("phone", formattedPhone)
+                        .maybeSingle();
+
+                    if (findError) {
+                        dbFailed = true;
+                        if (
+                            findError.message?.includes("fetch failed") ||
+                            findError.message?.includes("refused") ||
+                            findError.message?.includes("timeout")
+                        ) {
+                            if (dbConfig) dbConfig.setOffline();
+                        }
+                    } else {
+                        existing = data;
+                    }
+                } catch (dbError: any) {
+                    dbFailed = true;
+                    const msg = dbError?.message || String(dbError);
+                    if (
+                        msg.includes("fetch failed") ||
+                        msg.includes("refused") ||
+                        msg.includes("timeout")
+                    ) {
+                        if (dbConfig) dbConfig.setOffline();
+                    }
+                }
+            }
+
+            let result;
+            if (dbFailed) {
+                logger.warn("Supabase database is offline. Registering subscriber in-memory.");
+                existing = memorySubscribers.get(formattedPhone);
+
+                if (existing) {
+                    existing.user_id = req.user?.id || existing.user_id;
+                    existing.channels = channels;
+                    existing.language = language;
+                    existing.district = district;
+                    existing.is_active = true;
+                    if (!isOwner) {
+                        existing.status = "pending";
+                        existing.verification_otp = otp;
+                        existing.otp_expires_at = otpExpires;
+                    } else {
+                        existing.status = "active";
+                    }
+                    existing.updated_at = new Date().toISOString();
+                    result = existing;
+                } else {
+                    result = {
+                        id: `mem-${Date.now()}`,
+                        user_id: req.user?.id || null,
+                        phone: formattedPhone,
+                        channels,
+                        language,
+                        district,
+                        is_active: true,
+                        status: targetStatus,
+                        verification_otp: otp,
+                        otp_expires_at: otpExpires,
+                        created_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString(),
+                    };
+                    memorySubscribers.set(formattedPhone, result);
+                }
+            } else {
+                if (existing) {
+                    const updatePayload: any = {
+                        user_id: req.user?.id || existing.user_id,
+                        channels,
+                        language,
+                        district,
+                        is_active: true,
+                    };
+                    if (!isOwner) {
+                        updatePayload.status = "pending";
+                        updatePayload.verification_otp = otp;
+                        updatePayload.otp_expires_at = otpExpires;
+                    } else {
+                        updatePayload.status = "active";
+                    }
+
+                    const { data: updated, error: updateError } = await supabase
+                        .from("notification_subscribers")
+                        .update(updatePayload)
+                        .eq("id", existing.id)
+                        .select()
+                        .single();
+
+                    if (updateError) {
+                        logger.error({
+                            message: "Failed to update subscriber",
+                            error: updateError,
+                        });
+                        res.status(500).json({ error: "Database error" });
+                        return;
+                    }
+                    result = updated;
+                } else {
+                    const { data: created, error: insertError } = await supabase
+                        .from("notification_subscribers")
+                        .insert({
+                            user_id: req.user?.id || null,
+                            phone: formattedPhone,
+                            channels,
+                            language,
+                            district,
+                            is_active: true,
+                            status: targetStatus,
+                            verification_otp: otp,
+                            otp_expires_at: otpExpires,
+                        })
+                        .select()
+                        .single();
+
+                    if (insertError) {
+                        logger.error({
+                            message: "Failed to insert subscriber",
+                            error: insertError,
+                        });
+                        res.status(500).json({ error: "Database error" });
+                        return;
+                    }
+                    result = created;
+                }
+            }
+
+            if (!isOwner && otp) {
+                if (channels.includes("sms")) {
+                    await smsService
+                        .sendOtp(formattedPhone, otp, language)
+                        .catch((e) => logger.error("SMS failed", e));
+                } else if (channels.includes("whatsapp")) {
+                    await whatsappService
+                        .sendOtp(formattedPhone, otp, language)
+                        .catch((e) => logger.error("WhatsApp failed", e));
+                }
+            }
+
+            res.status(201).json({ success: true, subscriber: result });
+        } catch (err) {
+            logger.error({ message: "Error in /register endpoint", error: err });
+            res.status(500).json({ error: "Internal server error" });
+        }
+    }
+);
+
+const verifyOtpSchema = z.object({
+    phone: z.string(),
+    otp: z.string().length(6, "OTP must be exactly 6 digits"),
+});
+
+router.post("/verify-otp", async (req, res) => {
+    const parsed = verifyOtpSchema.safeParse(req.body);
+    if (!parsed.success) {
+        res.status(400).json({ error: "Invalid payload", issues: parsed.error.issues });
+        return;
+    }
+
+    const { phone, otp } = parsed.data;
+    const formattedPhone = formatPhoneNumber(phone);
+    if (!formattedPhone) {
+        res.status(400).json({ error: "Invalid phone number format" });
+        return;
+    }
+
+    try {
+        let dbFailed = dbConfig?.isSupabaseOffline;
+        let subscriber = null;
+
+        if (!dbFailed) {
+            try {
+                const { data, error } = await supabase
+                    .from("notification_subscribers")
+                    .select("*")
+                    .eq("phone", formattedPhone)
+                    .maybeSingle();
+
+                if (error) {
+                    dbFailed = true;
+                    if (
+                        error.message?.includes("fetch failed") ||
+                        error.message?.includes("refused") ||
+                        error.message?.includes("timeout")
+                    ) {
+                        if (dbConfig) dbConfig.setOffline();
+                    }
+                } else {
+                    subscriber = data;
+                }
+            } catch (dbError: any) {
+                dbFailed = true;
+                const msg = dbError?.message || String(dbError);
+                if (
+                    msg.includes("fetch failed") ||
+                    msg.includes("refused") ||
+                    msg.includes("timeout")
+                ) {
+                    if (dbConfig) dbConfig.setOffline();
+                }
+            }
+        }
+
+        if (dbFailed) {
+            subscriber = memorySubscribers.get(formattedPhone);
+        }
+
+        if (!subscriber) {
+            res.status(404).json({ error: "Subscriber not found" });
+            return;
+        }
+
+        if (subscriber.status === "active") {
+            res.json({ success: true, message: "Phone is already verified and active" });
+            return;
+        }
+
+        if (subscriber.verification_otp !== otp) {
+            res.status(400).json({ error: "Invalid OTP" });
+            return;
+        }
+
+        if (subscriber.otp_expires_at && new Date(subscriber.otp_expires_at) < new Date()) {
+            res.status(400).json({ error: "OTP expired" });
+            return;
+        }
+
+        if (!dbFailed) {
+            const { error: updateError } = await supabase
+                .from("notification_subscribers")
+                .update({ status: "active", verification_otp: null, otp_expires_at: null })
+                .eq("id", subscriber.id);
+
+            if (updateError) {
+                logger.error({ message: "Failed to activate subscriber", error: updateError });
+                res.status(500).json({ error: "Database error" });
+                return;
+            }
+        } else {
+            subscriber.status = "active";
+            subscriber.verification_otp = null;
+            subscriber.otp_expires_at = null;
+            subscriber.updated_at = new Date().toISOString();
+        }
+
+        res.json({ success: true, message: "Phone verified successfully" });
+    } catch (err) {
+        logger.error({ message: "Error in /verify-otp endpoint", error: err });
+        res.status(500).json({ error: "Internal server error" });
+    }
+});
+
+router.patch("/phone", optionalAuth, async (req: AuthenticatedRequest, res) => {
+    const parsed = updatePhoneSchema.safeParse(req.body);
+    if (!parsed.success) {
+        res.status(400).json({ error: "Invalid patch payload", issues: parsed.error.issues });
+        return;
+    }
+
+    const { phone, newPhone, channels, language, district, is_active } = parsed.data;
+    const formattedPhone = formatPhoneNumber(phone);
+    if (!formattedPhone) {
+        res.status(400).json({ error: "Invalid phone number format" });
+        return;
+    }
+    let formattedNewPhone: string | undefined = undefined;
+    if (newPhone) {
+        const fNew = formatPhoneNumber(newPhone);
+        if (!fNew) {
+            res.status(400).json({ error: "Invalid new phone number format" });
+            return;
+        }
+        formattedNewPhone = fNew;
+    }
+
+    try {
+        let data = null;
+        let dbFailed = dbConfig?.isSupabaseOffline;
+
+        if (!dbFailed) {
+            try {
+                const updateData: Record<string, unknown> = {};
+                if (formattedNewPhone !== undefined) updateData.phone = formattedNewPhone;
+                if (channels !== undefined) updateData.channels = channels;
+                if (language !== undefined) updateData.language = language;
+                if (district !== undefined) updateData.district = district;
+                if (is_active !== undefined) updateData.is_active = is_active;
+
+                let query = supabase.from("notification_subscribers").update(updateData);
+
+                if (req.user) {
+                    query = query.eq("user_id", req.user.id);
+                } else {
+                    query = query.eq("phone", formattedPhone);
+                }
+
+                const { data: dbData, error } = await query.select();
+                if (error) {
+                    dbFailed = true;
+                    if (
+                        error.message?.includes("fetch failed") ||
+                        error.message?.includes("refused") ||
+                        error.message?.includes("timeout")
+                    ) {
+                        if (dbConfig) dbConfig.setOffline();
+                    }
+                } else {
+                    data = dbData;
+                }
+            } catch (dbError: any) {
+                dbFailed = true;
+                const msg = dbError?.message || String(dbError);
+                if (
+                    msg.includes("fetch failed") ||
+                    msg.includes("refused") ||
+                    msg.includes("timeout")
+                ) {
+                    if (dbConfig) dbConfig.setOffline();
+                }
+            }
+        }
+
+        if (dbFailed) {
+            logger.warn("Supabase database is offline. Updating subscriber in-memory.");
+            let sub = req.user
+                ? Array.from(memorySubscribers.values()).find((s) => s.user_id === req.user!.id)
+                : memorySubscribers.get(formattedPhone);
+
+            if (sub) {
+                if (formattedNewPhone) {
+                    memorySubscribers.delete(sub.phone);
+                    sub.phone = formattedNewPhone;
+                    memorySubscribers.set(formattedNewPhone, sub);
+                }
+                if (channels) sub.channels = channels;
+                if (language) sub.language = language;
+                if (district) sub.district = district;
+                if (is_active !== undefined) sub.is_active = is_active;
+                sub.updated_at = new Date().toISOString();
+                data = [sub];
+            } else {
+                data = [];
+            }
+        }
+
+        if (!data || data.length === 0) {
+            res.status(404).json({ error: "Subscriber not found" });
+            return;
+        }
+
+        res.json({ success: true, subscriber: data[0] });
+    } catch (err) {
+        logger.error({ message: "Error in /phone update endpoint", error: err });
+        res.status(500).json({ error: "Internal server error" });
+    }
+});
+
+router.delete("/phone", optionalAuth, async (req: AuthenticatedRequest, res) => {
+    const parsed = deletePhoneSchema.safeParse(req.body);
+    let phone: string | undefined = undefined;
+    if (parsed.success && parsed.data.phone) {
+        const formatted = formatPhoneNumber(parsed.data.phone);
+        if (!formatted) {
+            res.status(400).json({ error: "Invalid phone number format" });
+            return;
+        }
+        phone = formatted;
+    }
+
+    try {
+        let data = null;
+        let dbFailed = dbConfig?.isSupabaseOffline;
+
+        if (!dbFailed) {
+            try {
+                let query = supabase.from("notification_subscribers").delete();
+
+                if (req.user) {
+                    query = query.eq("user_id", req.user.id);
+                } else if (phone) {
+                    query = query.eq("phone", phone);
+                } else {
+                    res.status(400).json({ error: "Phone number is required for guest opt-out" });
+                    return;
+                }
+
+                const { data: dbData, error } = await query.select();
+                if (error) {
+                    dbFailed = true;
+                    if (
+                        error.message?.includes("fetch failed") ||
+                        error.message?.includes("refused") ||
+                        error.message?.includes("timeout")
+                    ) {
+                        if (dbConfig) dbConfig.setOffline();
+                    }
+                } else {
+                    data = dbData;
+                }
+            } catch (dbError: any) {
+                dbFailed = true;
+                const msg = dbError?.message || String(dbError);
+                if (
+                    msg.includes("fetch failed") ||
+                    msg.includes("refused") ||
+                    msg.includes("timeout")
+                ) {
+                    if (dbConfig) dbConfig.setOffline();
+                }
+            }
+        }
+
+        if (dbFailed) {
+            logger.warn("Supabase database is offline. Deleting subscriber in-memory.");
+            let sub = req.user
+                ? Array.from(memorySubscribers.values()).find((s) => s.user_id === req.user!.id)
+                : phone
+                  ? memorySubscribers.get(phone)
+                  : undefined;
+
+            if (sub) {
+                memorySubscribers.delete(sub.phone);
+                data = [sub];
+            } else {
+                data = [];
+            }
+        }
+
+        if (!data || data.length === 0) {
+            res.status(404).json({ error: "Subscriber not found" });
+            return;
+        }
+
+        res.json({ success: true, message: "Unsubscribed successfully" });
+    } catch (err) {
+        logger.error({ message: "Error in delete /phone endpoint", error: err });
+        res.status(500).json({ error: "Internal server error" });
+    }
+});
+
+router.post("/broadcast", requireAuth, requireRole("admin"), async (req, res) => {
+    const broadcastSchema = z.object({
+        district: z.string().optional(),
+        title: z.string().min(2),
+        message: z.string().min(5),
+        severity: z.enum(["low", "medium", "high", "critical"]).default("medium"),
+    });
+
+    const parsed = broadcastSchema.safeParse(req.body);
+    if (!parsed.success) {
+        res.status(400).json({ error: "Invalid broadcast payload", issues: parsed.error.issues });
+        return;
+    }
+
+    const { district, title, message } = parsed.data;
+
+    try {
+        let sentCount = 0;
+        let totalProcessed = 0;
+        let hasMore = true;
+        const BATCH_SIZE = 500;
+        const CONCURRENCY_LIMIT = 50;
+        const fullMessage = `${title}\n\n${message}`;
+
+        while (hasMore) {
+            let query = supabase
+                .from("notification_subscribers")
+                .select("*")
+                .eq("is_active", true)
+                .eq("status", "active")
+                .order("id")
+                .range(totalProcessed, totalProcessed + BATCH_SIZE - 1);
+
+            if (district && district.toLowerCase() !== "all") {
+                query = query.ilike("district", district);
+            }
+
+            const { data: subscribers, error } = await query;
+
+            if (error) {
+                logger.error({ message: "Failed to fetch subscribers for broadcast", error });
+                res.status(500).json({ error: "Database error" });
+                return;
+            }
+
+            if (!subscribers || subscribers.length === 0) {
+                hasMore = false;
+                break;
+            }
+
+            for (let i = 0; i < subscribers.length; i += CONCURRENCY_LIMIT) {
+                const chunk = subscribers.slice(i, i + CONCURRENCY_LIMIT);
+
+                const chunkResults = await Promise.allSettled(
+                    chunk.map(async (sub) => {
+                        const subPromises: Promise<boolean>[] = [];
+                        if (sub.channels.includes("sms")) {
+                            subPromises.push(smsService.send(sub.phone, fullMessage, sub.language));
+                        }
+                        if (sub.channels.includes("whatsapp")) {
+                            subPromises.push(
+                                whatsappService.send(sub.phone, fullMessage, sub.language)
+                            );
+                        }
+                        if (subPromises.length === 0) return false;
+                        const res = await Promise.allSettled(subPromises);
+                        return res.some((r) => r.status === "fulfilled" && r.value === true);
+                    })
+                );
+
+                sentCount += chunkResults.filter(
+                    (r) => r.status === "fulfilled" && r.value === true
+                ).length;
+            }
+
+            totalProcessed += subscribers.length;
+            if (subscribers.length < BATCH_SIZE) {
+                hasMore = false;
+            }
+        }
+
+        if (totalProcessed === 0) {
+            res.json({
+                success: true,
+                sentCount: 0,
+                message: "No subscribers found matching criteria",
+            });
+            return;
+        }
+
+        res.json({ success: true, sentCount, message: `Broadcasted to ${sentCount} subscribers` });
+    } catch (err) {
+        logger.error({ message: "Error in /broadcast endpoint", error: err });
+        res.status(500).json({ error: "Internal server error" });
+    }
+});
+
+router.post(
+    "/twilio-webhook",
+    express.urlencoded({ extended: true }),
+    verifyTwilioSignature,
+    async (req, res) => {
+        const parsed = twilioWebhookSchema.safeParse(req.body);
+        if (!parsed.success) {
+            res.status(400).send("Invalid webhook payload");
+            return;
+        }
+        const from = parsed.data.From;
+        const body = parsed.data.Body ? parsed.data.Body.trim().toUpperCase() : "";
+        const formattedFrom = formatPhoneNumber(from);
+        if (!formattedFrom) {
+            res.status(400).send("Invalid phone number format");
+            return;
+        }
+
+        try {
+            let replyMessage = "";
+
+            if (["STOP", "UNSUBSCRIBE", "QUIT", "CANCEL"].includes(body)) {
+                const { error } = await supabase
+                    .from("notification_subscribers")
+                    .update({ is_active: false })
+                    .eq("phone", formattedFrom);
+
+                if (error) {
+                    logger.error({
+                        message: "Failed to opt-out via Twilio STOP",
+                        error,
+                        phone: formattedFrom,
+                    });
+                    res.status(500).send("Database error");
+                    return;
+                }
+
+                replyMessage =
+                    "You have been unsubscribed from SahiDawa alerts. Reply START to subscribe again.";
+            } else if (["START", "SUBSCRIBE", "UNSTOP"].includes(body)) {
+                const { error } = await supabase
+                    .from("notification_subscribers")
+                    .update({ is_active: true })
+                    .eq("phone", formattedFrom);
+
+                if (error) {
+                    logger.error({
+                        message: "Failed to opt-in via Twilio START",
+                        error,
+                        phone: formattedFrom,
+                    });
+                    res.status(500).send("Database error");
+                    return;
+                }
+
+                replyMessage =
+                    "Welcome back to SahiDawa alerts! You will receive critical safety alerts for your district.";
+            } else {
+                replyMessage =
+                    "SahiDawa Alerts: Reply STOP to unsubscribe, or START to receive safety alerts.";
+            }
+
+            res.setHeader("Content-Type", "text/xml");
+            res.send(`<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+    <Message>${replyMessage}</Message>
+</Response>`);
+        } catch (err) {
+            logger.error({ message: "Error in Twilio webhook", error: err });
+            res.status(500).send("Internal server error");
+        }
+    }
+);
 
 export default router;

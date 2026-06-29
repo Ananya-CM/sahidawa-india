@@ -1,7 +1,17 @@
+if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
+    process.env.NEXT_PUBLIC_SUPABASE_URL = "http://localhost:54321";
+}
+if (!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "test-anon-key";
+}
+
 module.exports = {
     testEnvironment: "node",
+    setupFiles: ["<rootDir>/jest.env.cjs"],
     roots: ["<rootDir>/tests"],
+    testPathIgnorePatterns: ["<rootDir>/tests/e2e/"],
     moduleNameMapper: {
+        "\\.css$": "<rootDir>/tests/mocks/styleMock.ts",
         "^leaflet$": "<rootDir>/tests/mocks/leaflet.ts",
         "^react-leaflet$": "<rootDir>/tests/mocks/react-leaflet.ts",
         "^leaflet/dist/leaflet.css$": "<rootDir>/tests/mocks/leaflet.ts",

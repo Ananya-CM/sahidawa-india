@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { usePathname } from "next/navigation";
-import { MessageSquare, X, Send, Bot, Home } from "lucide-react";
+import { MessageSquare, X, Send, Bot, Home, Trash2, Check } from "lucide-react";
 import { Link } from "@/i18n/routing";
 import { getChatbotPanelClasses, getChatbotPositionClasses } from "./chatbotPosition";
 import { ChatMarkdown } from "@/app/components/ChatMarkdown";
@@ -12,28 +12,66 @@ import { isAbortError, readChatErrorMessage, readTextResponseStream } from "@/li
 type Message = {
     text: string;
     isBot: boolean;
+    isTranslationKey?: boolean;
     isTyping?: boolean;
 };
 
-const MessageContent = ({ msg }: { msg: Message }) =>
-    msg.isBot ? (
-        <ChatMarkdown content={msg.text} />
+const MessageContent = ({ msg }: { msg: Message }) => {
+    const t = useTranslations("chatbot");
+
+    const content = msg.isTranslationKey ? t(msg.text) : msg.text;
+
+    return msg.isBot ? (
+        <ChatMarkdown content={content} />
     ) : (
-        <span className="text-sm leading-relaxed whitespace-pre-wrap">{msg.text}</span>
+        <span className="text-sm leading-relaxed whitespace-pre-wrap">{content}</span>
     );
+};
+
+const ChatSkeleton = () => {
+    return (
+        <div className="max-w-[85%] animate-pulse self-start rounded-2xl rounded-tl-sm border border-(--color-border-muted) bg-(--color-surface-page) p-3 shadow-sm">
+            <div className="mb-2 h-3 w-32 rounded bg-gray-300"></div>
+            <div className="mb-2 h-3 w-48 rounded bg-gray-300"></div>
+            <div className="h-3 w-24 rounded bg-gray-300"></div>
+        </div>
+    );
+};
 
 export default function Chatbot() {
     const pathname = usePathname();
     const t = useTranslations("chatbot");
+    const tHome = useTranslations("Home");
+    const tA11y = useTranslations("A11y");
     const [isOpen, setIsOpen] = useState(false);
-    const [messages, setMessages] = useState<Message[]>([{ text: t("welcome"), isBot: true }]);
+    const [isLoadingWelcome, setIsLoadingWelcome] = useState(true);
+    const [messages, setMessages] = useState<Message[]>([
+        {
+            text: "welcome",
+            isBot: true,
+            isTranslationKey: true,
+        },
+    ]);
     const [input, setInput] = useState("");
+    const [isConfirmingClear, setIsConfirmingClear] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const activeRequestRef = useRef<AbortController | null>(null);
-    const previousWelcomeRef = useRef(t("welcome"));
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    };
+
+    const handleClear = () => {
+        activeRequestRef.current?.abort();
+        setMessages([
+            {
+                text: "welcome",
+                isBot: true,
+                isTranslationKey: true,
+            },
+        ]);
+        setInput("");
+        setIsConfirmingClear(false);
     };
 
     useEffect(() => {
@@ -41,22 +79,12 @@ export default function Chatbot() {
     }, [messages]);
 
     useEffect(() => {
-        setMessages((prev) => {
-            if (prev.length > 0 && prev[0].isBot && prev[0].text === previousWelcomeRef.current) {
-                const updated = [...prev];
-                updated[0] = {
-                    ...updated[0],
-                    text: t("welcome"),
-                };
+        const timer = setTimeout(() => {
+            setIsLoadingWelcome(false);
+        }, 600);
 
-                previousWelcomeRef.current = t("welcome");
-                return updated;
-            }
-
-            previousWelcomeRef.current = t("welcome");
-            return prev;
-        });
-    }, [t]);
+        return () => clearTimeout(timer);
+    }, []);
 
     useEffect(() => {
         return () => {
@@ -137,40 +165,77 @@ export default function Chatbot() {
 
     return (
         <div className={getChatbotPositionClasses({ pathname, isOpen })}>
-            {isOpen && (
-                <div className={getChatbotPanelClasses({ pathname })}>
-                    {/* Header */}
-                    <div className="z-10 flex items-center justify-between bg-green-600 p-4 text-white shadow-md dark:bg-green-700">
-                        <div className="flex items-center gap-3">
-                            <div className="rounded-full bg-white/20 p-2">
-                                <Bot size={20} />
-                            </div>
-                            <div>
-                                <h3 className="text-sm font-bold">{t("title")}</h3>
-                                <p className="text-xs text-white/95">{t("status")}</p>
-                            </div>
+            <div
+                className={`${getChatbotPanelClasses({ pathname })} ${
+                    isOpen
+                        ? "pointer-events-auto scale-100 opacity-100"
+                        : "pointer-events-none scale-95 opacity-0"
+                } origin-bottom-right transition-all duration-300 ease-out`}
+            >
+                {/* Header */}
+                <div className="z-10 flex items-center justify-between bg-green-600 p-4 text-white shadow-md dark:bg-green-700">
+                    <div className="flex items-center gap-3">
+                        <div className="rounded-full bg-white/20 p-2">
+                            <Bot size={20} />
                         </div>
-                        <div className="flex items-center gap-1">
-                            <Link
-                                href="/"
-                                className="rounded-full p-2 text-white/80 transition-colors hover:bg-white/20 hover:text-white"
-                                aria-label="Go to homepage"
-                            >
-                                <Home size={18} />
-                            </Link>
-                            <button
-                                onClick={() => setIsOpen(false)}
-                                className="rounded-full p-2 text-white transition-colors hover:bg-white/20"
-                                aria-label="Close chat"
-                            >
-                                <X size={20} />
-                            </button>
+                        <div>
+                            <h3 className="text-sm font-bold">{t("title")}</h3>
+                            <p className="text-xs text-white/95">{t("status")}</p>
                         </div>
                     </div>
+                    <div className="flex items-center gap-1">
+                        {isConfirmingClear ? (
+                            <div className="flex items-center gap-1 rounded-full bg-white/10 px-1 py-0.5">
+                                <button
+                                    onClick={handleClear}
+                                    className="rounded-full p-1.5 text-green-300 transition-colors hover:bg-white/20 hover:text-green-200"
+                                    aria-label={tA11y("confirmClearConversation")}
+                                    title={tA11y("confirmClearConversation")}
+                                >
+                                    <Check size={16} />
+                                </button>
+                                <button
+                                    onClick={() => setIsConfirmingClear(false)}
+                                    className="rounded-full p-1.5 text-red-300 transition-colors hover:bg-white/20 hover:text-red-200"
+                                    aria-label={tA11y("cancelClearConversation")}
+                                    title={tA11y("cancelClearConversation")}
+                                >
+                                    <X size={16} />
+                                </button>
+                            </div>
+                        ) : (
+                            <button
+                                onClick={() => setIsConfirmingClear(true)}
+                                className="rounded-full p-2 text-white/80 transition-colors hover:bg-white/20 hover:text-white"
+                                aria-label={t("clear")}
+                                title={t("clear")}
+                            >
+                                <Trash2 size={18} />
+                            </button>
+                        )}
+                        <Link
+                            href="/"
+                            className="rounded-full p-2 text-white/80 transition-colors hover:bg-white/20 hover:text-white"
+                            aria-label={tA11y("goToHomepage")}
+                        >
+                            <Home size={18} />
+                        </Link>
+                        <button
+                            onClick={() => setIsOpen(false)}
+                            className="rounded-full p-2 text-white transition-colors hover:bg-white/20"
+                            aria-label={tA11y("closeChat")}
+                        >
+                            <X size={20} />
+                        </button>
+                    </div>
+                </div>
 
-                    {/* Messages */}
-                    <div className="flex flex-1 flex-col gap-4 overflow-y-auto bg-(--color-surface-muted) p-4">
-                        {messages.map((msg, idx) => (
+                {/* Messages */}
+                <div className="flex flex-1 flex-col gap-4 overflow-y-auto bg-(--color-surface-muted) p-4">
+                    {isLoadingWelcome ? (
+                        <ChatSkeleton />
+                    ) : (
+                        messages.map((msg, idx) => (
                             <div
                                 key={idx}
                                 className={`max-w-[85%] rounded-2xl p-3 shadow-sm ${
@@ -181,43 +246,43 @@ export default function Chatbot() {
                             >
                                 <MessageContent msg={msg} />
                             </div>
-                        ))}
-                        <div ref={messagesEndRef} />
-                    </div>
-
-                    {/* Input Area */}
-                    <div className="flex items-center gap-2 border-t border-(--color-border-muted) bg-(--color-surface-page) p-3">
-                        <input
-                            type="text"
-                            value={input}
-                            onChange={(e) => setInput(e.target.value)}
-                            onKeyDown={(e) => e.key === "Enter" && handleSend()}
-                            placeholder={t("placeholder")}
-                            className="flex-1 rounded-full bg-(--color-surface-muted) px-4 py-3 text-sm text-(--color-text-primary) transition-all placeholder:text-(--color-text-muted) focus:ring-2 focus:ring-green-500/50 focus:outline-none"
-                        />
-                        <button
-                            onClick={handleSend}
-                            disabled={!input.trim()}
-                            className="flex h-11 w-11 items-center justify-center rounded-full bg-green-600 p-3 text-white shadow-md transition-colors hover:bg-green-700 disabled:opacity-50 dark:bg-green-700 dark:hover:bg-green-800"
-                            aria-label="Send message"
-                        >
-                            <Send size={18} className="relative right-[1px] bottom-[1px]" />
-                        </button>
-                    </div>
+                        ))
+                    )}
+                    <div ref={messagesEndRef} />
                 </div>
-            )}
+
+                {/* Input Area */}
+                <div className="flex items-center gap-2 border-t border-(--color-border-muted) bg-(--color-surface-page) p-3">
+                    <input
+                        type="text"
+                        value={input}
+                        onChange={(e) => setInput(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && handleSend()}
+                        placeholder={t("placeholder")}
+                        className="flex-1 rounded-full bg-(--color-surface-muted) px-4 py-3 text-sm text-(--color-text-primary) transition-all placeholder:text-(--color-text-muted) focus:ring-2 focus:ring-green-500/50 focus:outline-none"
+                    />
+                    <button
+                        onClick={handleSend}
+                        disabled={!input.trim()}
+                        className="flex h-11 w-11 items-center justify-center rounded-full bg-green-600 p-3 text-white shadow-md transition-colors hover:bg-green-700 disabled:opacity-50 dark:bg-green-700 dark:hover:bg-green-800"
+                        aria-label={tA11y("sendMessage")}
+                    >
+                        <Send size={18} className="relative right-[1px] bottom-[1px]" />
+                    </button>
+                </div>
+            </div>
 
             <div className="group relative flex items-center">
                 {!isOpen && (
                     <div className="absolute right-16 rounded-lg bg-slate-900 px-3 py-2 text-sm whitespace-nowrap text-white opacity-0 transition-all duration-300 group-hover:opacity-100">
-                        AI Health Assistant
+                        {tHome("ai_health_assistant")}
                     </div>
                 )}
 
                 <button
                     onClick={() => setIsOpen(!isOpen)}
-                    className="relative z-50 flex h-14 w-14 items-center justify-center rounded-full bg-green-600 text-white shadow-[0_8px_20px_rgba(22,163,74,0.3)] transition-all hover:scale-105 hover:shadow-[0_8px_25px_rgba(22,163,74,0.4)] active:scale-95 dark:bg-green-700 dark:hover:bg-green-800"
-                    aria-label={isOpen ? "Close AI chat" : "Open AI chat"}
+                    className="relative z-10 flex h-14 w-14 items-center justify-center rounded-full bg-green-600 text-white shadow-[0_8px_20px_rgba(22,163,74,0.3)] transition-all hover:scale-105 hover:shadow-[0_8px_25px_rgba(22,163,74,0.4)] active:scale-95 dark:bg-green-700 dark:hover:bg-green-800"
+                    aria-label={isOpen ? tA11y("closeAiChat") : tA11y("openAiChat")}
                 >
                     {isOpen ? <X size={28} /> : <MessageSquare size={28} />}
                 </button>

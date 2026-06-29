@@ -27,10 +27,20 @@
         "alerts_empty_title": "எல்லாம் சரியாக உள்ளது!",
         "alerts_empty_description": "தற்போது செயலில் உள்ள ஒழுங்குமுறை எச்சரிக்கைகள் இல்லை. பாதுகாப்பாக இருங்கள் மற்றும் உங்கள் மருந்துகளை சரிபார்க்கவும்.",
         "view_full_alert_log": "முழு எச்சரிக்கை பதிவைப் பார்க்கவும்",
+        "vaccine_title": "தடுப்பூசி மையம் & நோய்த்தடுப்பூசி கண்காணிப்பான்",
+        "vaccine_subtitle": "சிறந்த பொதுச் சுகாதார விழிப்புணர்விற்காக தடுப்பூசி அட்டவணைகள், பாதுகாப்பு தகவல்கள் மற்றும் தடுப்பூசிக்குப் பிந்தைய பராமரிப்பு வழிகாட்டுதல்களை அறிந்துகொள்ளுங்கள்.",
+        "vaccine_open": "தடுப்பூசி மையத்தைத் திறக்கவும்",
         "heroTitle": {
             "prefix": "உங்கள் ஆரோக்கியம், ",
             "highlight": "சரிபார்க்கப்பட்ட & பாதுகாக்கப்பட்ட."
-        }
+        },
+        "scan_section_title": "மருந்தை ஸ்கேன் செய்து சரிபார்க்கவும்",
+        "scan_section_subtitle": "பார்கோடு அல்லது பேக்கேஜ் ஸ்கேனிங்கைப் பயன்படுத்தி மருந்தின் நம்பகத்தன்மையைச் சரிபார்க்கவும்.",
+        "powerful_capabilities": "சக்திவாய்ந்த திறன்கள்",
+        "features_description": "சஹிதாவா (SahiDawa) உங்கள் மருந்துகளைச் சரிபார்க்கவும் பாதுகாப்பாக இருக்கவும் உதவும் அனைத்து வழிகளையும் கண்டறியவும்.",
+        "trusted_by_citizens": "மக்களால் நம்பப்படுகிறது",
+        "voices_title": "சஹிதாவா சமூகத்தின் குரல்கள்",
+        "voices_description": "மருந்துப் பாதுகாப்பை எளிதாக்க சஹிதாவாவைப் பயன்படுத்தும் குடும்பங்கள், மருந்தாளுநர்கள், மருத்துவர்கள் மற்றும் பங்களிப்பாளர்கள்."
     },
     "Navigation": {
         "how_it_works": "எப்படி வேலை செய்கிறது",
@@ -365,7 +375,8 @@
         "placeholder": "Ask me about a medicine...",
         "status": "Online",
         "title": "SahiDawa AI",
-        "welcome": "Hi! I am the SahiDawa AI Assistant. How can I help you with your medicines today?"
+        "welcome": "Hi! I am the SahiDawa AI Assistant. How can I help you with your medicines today?",
+        "tooltipLabel": "AI Health Assistant"
     },
     "Alerts": {
         "backHome": "முகப்புப் பக்கத்திற்குத் திரும்பு",
@@ -452,7 +463,15 @@
         "importError": "தவறான காப்புப்பிரதி கோப்பு. சரியான JSON காப்புப்பிரதியைப் பதிவேற்றவும்.",
         "statusExpired": "காலாவதியானது",
         "statusExpiringSoon": "விரைவில் காலாவதியாகும் ({days} நாட்கள்)",
-        "statusSafe": "பாதுகாப்பானது"
+        "statusSafe": "பாதுகாப்பானது",
+        "exportCSV": "CSVஐ ஏற்றுமதி செய்",
+        "exportPDF": "PDFஐ ஏற்றுமதி செய்",
+        "print": "அச்சிடு",
+        "csvExportSuccess": "CSV வெற்றிகரமாக ஏற்றுமதி செய்யப்பட்டது",
+        "pdfExportSuccess": "PDF வெற்றிகரமாக ஏற்றுமதி செய்யப்பட்டது",
+        "noMedicinesToDisplay": "காண்பிக்க எந்த மருந்துகளும் இல்லை",
+        "generatedOn": "உருவாக்கப்பட்ட தேதி (கடைசியாக",
+        "deleteMedicine": "மருந்தை நீக்கு"
     },
     "Login": {
         "brandSubtitle": "மருந்து பாதுகாப்பு தளம்",
@@ -463,6 +482,7 @@
             "description": "Supabase URL அல்லது anon key இல்லை. உள்நுழைவதற்கு முன் environment variables ஐச் சேர்க்கவும்."
         },
         "googleButton": "Google மூலம் தொடரவும்",
+        "githubButton": "GitHub மூலம் தொடரவும்",
         "emailSeparator": "அல்லது மின்னஞ்சல் மூலம் தொடரவும்",
         "emailLabel": "மின்னஞ்சல் முகவரி",
         "emailPlaceholder": "you@example.com",
@@ -476,7 +496,9 @@
         "errors": {
             "databaseNotConfigured": "இந்த சூழலுக்கான அங்கீகாரம் கட்டமைக்கப்படவில்லை.",
             "generic": "உள்நுழைய முடியவில்லை. மீண்டும் முயற்சிக்கவும்."
-        }
+        },
+        "signUpPrompt": "Don't have an account?",
+        "signUpLink": "Sign up"
     },
     "AdminLayout": {
         "accessDeniedTitle": "அணுகல் மறுக்கப்பட்டது",
@@ -638,37 +660,158 @@
         "nav_reports": "My Reports",
         "nav_profile": "My Profile"
     },
-  "medicineSafety": {
-    "guideTitle": "பயன்பாடு மற்றும் பாதுகாப்பு வழிகாட்டி",
-    "noDosageInfo": "இந்த வயது குழுவிற்கான மருந்தளவு தகவல் கிடைக்கவில்லை.",
-    "closeButton": "பாதுகாப்பு தகவலை மூடு",
-    "tabs": {
-      "sideEffects": "பக்க விளைவுகள்",
-      "dosage": "மருந்தளவு",
-      "dietaryIntake": "உணவு உட்கொள்ளல்"
+    "medicineSafety": {
+        "guideTitle": "பயன்பாடு மற்றும் பாதுகாப்பு வழிகாட்டி",
+        "noDosageInfo": "இந்த வயது குழுவிற்கான மருந்தளவு தகவல் கிடைக்கவில்லை.",
+        "closeButton": "பாதுகாப்பு தகவலை மூடு",
+        "tabs": {
+            "sideEffects": "பக்க விளைவுகள்",
+            "dosage": "மருந்தளவு",
+            "dietaryIntake": "உணவு உட்கொள்ளல்"
+        },
+        "sideEffects": {
+            "standardSymptoms": "சாதாரண அறிகுறிகள்",
+            "severeRedFlags": "கடுமையான எச்சரிக்கைகள் — உடனடியாக மருத்துவ உதவி பெறவும்"
+        },
+        "dosage": {
+            "tabs": {
+                "kids": "குழந்தைகள்",
+                "adults": "பெரியவர்கள்",
+                "elderly": "முதியவர்கள்"
+            },
+            "doseLabel": "மருந்தளவு:",
+            "frequencyLabel": "அடிக்கடி:",
+            "notesHeading": "குறிப்புகள்",
+            "warningsHeading": "எச்சரிக்கைகள்"
+        },
+        "dietary": {
+            "tabs": {
+                "dietaryIntake": "உணவு உட்கொள்ளல்"
+            },
+            "storageHeading": "சேமிப்பு",
+            "pregnancyHeading": "கர்ப்பம்"
+        },
+        "disclaimer": "இந்த தகவல் கல்வி நோக்கத்திற்கானது; இது தொழில்முறை மருத்துவ ஆலோசனைக்கு மாற்றாகாது."
     },
-    "sideEffects": {
-      "standardSymptoms": "சாதாரண அறிகுறிகள்",
-      "severeRedFlags": "கடுமையான எச்சரிக்கைகள் — உடனடியாக மருத்துவ உதவி பெறவும்"
+    "SchemeEligibility": {
+        "validationAgeError": "சரியான வயதை உள்ளிடவும்.",
+        "validationStateError": "ஒரு மாநிலத்தைத் தேர்ந்தெடுக்கவும்.",
+        "validationIncomeError": "தயவுசெய்து சரியான ஆண்டு வருமானத்தை உள்ளிடவும்.",
+        "validationFamilySizeError": "தயவுசெய்து குடும்ப உறுப்பினர்களின் சரியான எண்ணிக்கையை உள்ளிடவும்.",
+        "eligibilityCheckedSuccess": "தகுதி வெற்றிகரமாக சரிபார்க்கப்பட்டது!",
+        "eligibilityCheckFailed": "தகுதியை சரிபார்க்க முடியவில்லை. தயவுசெய்து மீண்டும் முயற்சிக்கவும்.",
+        "title": "உங்கள் <highlight>திட்ட தகுதியை</highlight> சரிபார்க்கவும்",
+        "description": "நீங்கள் மற்றும் உங்கள் குடும்பத்தினர் எந்த அரசு சுகாதார திட்டங்களுக்கு தகுதியானவர்கள் என்பதை 3 எளிய படிகளில் கண்டறியவும்.",
+        "stepDemographics": "மக்கள்தொகை விவரங்கள்",
+        "stepIncomeFamily": "வருமானம் & குடும்பம்",
+        "stepIdentification": "அடையாளம்",
+        "ageLabel": "உங்கள் வயது என்ன?",
+        "ageDescription": "வயது முதியோர் சுகாதார தகுதியை சரிபார்க்க உதவுகிறது.",
+        "agePlaceholder": "உதாரணமாக: 45",
+        "stateLabel": "நீங்கள் எந்த மாநிலத்தில் வசிக்கிறீர்கள்?",
+        "stateDescription": "அரசு சுகாதார காப்பீட்டு திட்டங்கள் மாநிலத்திற்கு மாநிலம் மாறுபடும்.",
+        "incomeLabel": "உங்கள் குடும்பத்தின் மொத்த ஆண்டு வருமானம் என்ன?",
+        "incomeDescription": "ஒவ்வொரு ஆண்டும் ரூபாயில் உங்கள் குடும்பத்தின் மொத்த ஆண்டு வருமானம்.",
+        "incomePlaceholder": "உதாரணமாக: 120000",
+        "familySizeLabel": "உங்கள் குடும்பத்தில் எத்தனை உறுப்பினர்கள் உள்ளனர்?",
+        "familySizeDescription": "வீட்டில் ஒன்றாக வசிக்கும் மொத்த குடும்ப உறுப்பினர்கள்.",
+        "familySizePlaceholder": "உதாரணமாக: 5",
+        "bplQuestion": "உங்களிடம் பிபிஎல் (BPL) அட்டை உள்ளதா?",
+        "abhaQuestion": "உங்களிடம் ஆபா (ABHA) ஐடி உள்ளதா?",
+        "yesOption": "ஆம், என்னிடம் உள்ளது",
+        "noOption": "இல்லை, என்னிடம் இல்லை",
+        "backButton": "பின்னால்",
+        "nextButton": "அடுத்த படி",
+        "findSchemesButton": "திட்டங்களை கண்டுபிடி",
+        "checkingButton": "சரிபார்க்கப்படுகிறது...",
+        "resultsTitle": "உங்கள் தகுதியான திட்டங்கள்",
+        "resultsDescription": "நீங்கள் தகுதிபெறும் <countTag>{count} திட்டங்களை</countTag> நாங்கள் கண்டறிந்துள்ளோம்.",
+        "eligibleBadge": "தகுதியானது",
+        "benefitsCoverage": "பலன்கள் / காப்பீடு",
+        "howToApply": "விண்ணப்பிப்பது எப்படி",
+        "visitOfficialPortal": "அதிகாரப்பூர்வ இணையதளத்தை பார்வையிடவும்",
+        "noSchemesTitle": "எந்த திட்டங்களும் கண்டறியப்படவில்லை.",
+        "noSchemesDescription": "தயவுசெய்து கிராம அதிகாரியை தொடர்பு கொள்ளவும் அல்லது உங்கள் உள்ளூர் அரசு மையத்தில் சரிபார்க்கவும்.",
+        "printPdfButton": "அச்சிடுக / பிடிஎப் ஆக சேமிக்கவும்",
+        "checkAgainButton": "மீண்டும் சரிபார்க்கவும்",
+        "printBrandTitle": "SahiDawa — கிராமப்புற சுகாதார பாலம்",
+        "printReportTitle": "அரசு சுகாதார திட்ட தகுதி அறிக்கை",
+        "dateGenerated": "உருவாக்கப்பட்ட தேதி",
+        "website": "இணையதளம்",
+        "age": "வயது",
+        "years": "ஆண்டுகள்",
+        "stateOfResidence": "வசிக்கும் மாநிலம்",
+        "annualFamilyIncome": "ஆண்டு குடும்ப வருமானம்",
+        "familySize": "குடும்ப அளவு",
+        "members": "உறுப்பினர்கள்",
+        "bplRationCardHolder": "BPL குடும்ப அட்டை வைத்திருப்பவர்",
+        "abhaHealthIdHolder": "ABHA சுகாதார ஐடி வைத்திருப்பவர்",
+        "yes": "ஆம்",
+        "no": "இல்லை"
     },
-    "dosage": {
-      "tabs": {
-        "kids": "குழந்தைகள்",
-        "adults": "பெரியவர்கள்",
-        "elderly": "முதியவர்கள்"
-      },
-      "doseLabel": "மருந்தளவு:",
-      "frequencyLabel": "அடிக்கடி:",
-      "notesHeading": "குறிப்புகள்",
-      "warningsHeading": "எச்சரிக்கைகள்"
+    "Health": {
+        "quickActions": "Quick actions",
+        "scanMedicine": "Scan Medicine",
+        "verifyAuthenticity": "Verify authenticity",
+        "checkSymptoms": "Check Symptoms",
+        "symptomGuidance": "AI-assisted guidance",
+        "findPharmacy": "Find Pharmacy",
+        "locateStores": "Locate verified stores",
+        "replyFallback": "I'm here to help! Could you rephrase that?",
+        "tooManyRequests": "Too many requests. Please try again in a few moments.",
+        "failedResponse": "Failed to generate AI response",
+        "genericError": "Something went wrong",
+        "returnHome": "Return to chat home",
+        "chatConversation": "Chat conversation",
+        "startVoice": "Start voice input",
+        "stopVoice": "Stop voice input",
+        "healthQuestion": "Type your health question",
+        "voiceBrowserRequired": "Voice input is not supported in this browser.",
+        "listening": "Listening... speak clearly",
+        "placeholder": "Type your health concern...",
+        "sendMessage": "Send message",
+        "footer": "For informational use only • Consult a doctor"
     },
-    "dietary": {
-      "tabs": {
-        "dietaryIntake": "உணவு உட்கொள்ளல்"
-      },
-      "storageHeading": "சேமிப்பு",
-      "pregnancyHeading": "கர்ப்பம்"
-    },
-    "disclaimer": "இந்த தகவல் கல்வி நோக்கத்திற்கானது; இது தொழில்முறை மருத்துவ ஆலோசனைக்கு மாற்றாகாது."
-  }
+    "SignUp": {
+        "brandSubtitle": "Medicine safety platform",
+        "heading": "Create your account",
+        "description": "Join SahiDawa to track medicine safety reports and verification results.",
+        "missingConfig": {
+            "title": "Authentication is not configured",
+            "description": "Supabase URL or anon key is missing. Add the environment variables before signing up."
+        },
+        "googleButton": "Continue with Google",
+        "githubButton": "Continue with Github",
+        "emailSeparator": "or continue with email",
+        "fullNameLabel": "Full name",
+        "fullNamePlaceholder": "Your full name",
+        "emailLabel": "Email address",
+        "emailPlaceholder": "you@example.com",
+        "passwordLabel": "Password",
+        "passwordPlaceholder": "Create a password",
+        "confirmPasswordLabel": "Confirm password",
+        "confirmPasswordPlaceholder": "Re-enter your password",
+        "showPassword": "Show password",
+        "hidePassword": "Hide password",
+        "showConfirmPassword": "Show confirm password",
+        "hideConfirmPassword": "Hide confirm password",
+        "signingUp": "Creating account...",
+        "signUp": "Sign Up",
+        "footerPrompt": "Already have an account?",
+        "signInLink": "Sign in",
+        "bottomText": "Protected access for SahiDawa community tools.",
+        "success": "Account created successfully! Redirecting...",
+        "successConfirmEmail": "Account created! Check your email to confirm your account before signing in.",
+        "errors": {
+            "databaseNotConfigured": "Authentication is not configured for this environment.",
+            "generic": "Unable to create account. Please try again.",
+            "fullNameRequired": "Full name is required.",
+            "emailRequired": "Email address is required.",
+            "emailInvalid": "Please enter a valid email address.",
+            "passwordRequired": "Password is required.",
+            "passwordWeak": "Password must be at least 8 characters and include uppercase, lowercase, and a number.",
+            "confirmPasswordRequired": "Please confirm your password.",
+            "passwordMismatch": "Passwords do not match."
+        }
+    }
 }

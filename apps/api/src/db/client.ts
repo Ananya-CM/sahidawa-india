@@ -1,6 +1,38 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import dotenv from "dotenv";
+import path from "path";
 import logger from "../utils/logger";
-import { CONNECTION_TIMEOUT_MS, MAX_RETRIES, RETRY_DELAY_MS, fetchWithRetry } from "./fetchUtils";
+import { MAX_RETRIES, RETRY_DELAY_MS, fetchWithRetry } from "./fetchUtils";
+
+export const dbConfig = {
+    isSupabaseOffline: false,
+    offlineSince: null as Date | null,
+    setOffline() {
+        if (!this.isSupabaseOffline) {
+            this.isSupabaseOffline = true;
+            this.offlineSince = new Date();
+            logger.warn("Supabase marked offline. Auto-recovery probe will reset this every 30s.");
+        }
+    },
+    setOnline() {
+        if (this.isSupabaseOffline) {
+            logger.info(
+                `Supabase connection recovered after ${
+                    this.offlineSince
+                        ? Math.round((Date.now() - this.offlineSince.getTime()) / 1000)
+                        : "?"
+                }s offline.`
+            );
+        }
+        this.isSupabaseOffline = false;
+        this.offlineSince = null;
+    },
+};
+
+dotenv.config({ path: path.resolve(__dirname, "../../../../.env") });
+if (!process.env.SUPABASE_URL) {
+    dotenv.config();
+}
 
 // ── Environment resolution ────────────────────────────────────────────────────
 
@@ -96,7 +128,8 @@ async function pooledFetch(input: RequestInfo | URL, init?: RequestInit): Promis
 
 // ── Supabase client ───────────────────────────────────────────────────────────
 
-export const supabase: SupabaseClient = createClient(supabaseUrl, supabaseKey, {
+// Privileged backend client for server-side writes and admin-only access.
+export const serviceRoleSupabase: SupabaseClient = createClient(supabaseUrl, supabaseKey, {
     global: {
         fetch: pooledFetch as typeof fetch,
     },
@@ -105,6 +138,10 @@ export const supabase: SupabaseClient = createClient(supabaseUrl, supabaseKey, {
         autoRefreshToken: false,
     },
 });
+
+// Backward-compatible alias for existing API modules. New code should import
+// serviceRoleSupabase so the permission level is clear at the call site.
+export const supabase = serviceRoleSupabase;
 
 // ── Graceful shutdown ─────────────────────────────────────────────────────────
 
@@ -133,9 +170,40 @@ process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
 process.on("SIGINT", () => gracefulShutdown("SIGINT"));
 
 // Log pool exhaustion warnings
-setInterval(() => {
-    const { active, queued, max } = pool.stats;
-    if (queued > 0) {
-        logger.warn(`DB pool pressure: ${active}/${max} active, ${queued} queued`);
+if (process.env.NODE_ENV !== "test") {
+    setInterval(() => {
+        const { active, queued, max } = pool.stats;
+        if (queued > 0) {
+            logger.warn(`DB pool pressure: ${active}/${max} active, ${queued} queued`);
+        }
+    }, 5_000);
+}
+
+// Periodic Supabase health probe.
+// The offline flag can be set by transient network failures during runtime.
+// Re-check connectivity periodically so the application can automatically
+// recover from fallback mode without requiring a server restart.
+
+async function probeSupabase(): Promise<void> {
+    const checkTimeout = AbortSignal.timeout ? AbortSignal.timeout(1500) : undefined;
+
+    try {
+        const res = await fetch(`${supabaseUrl}/auth/v1/health`, { signal: checkTimeout });
+
+        if (!res.ok) {
+            dbConfig.setOffline();
+        } else {
+            dbConfig.setOnline();
+        }
+    } catch {
+        dbConfig.setOffline();
     }
-}, 5_000);
+}
+
+if (process.env.NODE_ENV !== "test") {
+    void probeSupabase();
+
+    setInterval(() => {
+        void probeSupabase();
+    }, 30_000);
+}

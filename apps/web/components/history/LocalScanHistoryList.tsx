@@ -1,7 +1,15 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { AlertTriangle, ChevronLeft, ChevronRight, History, RotateCcw, Trash2 } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState, useRef } from "react";
+import {
+    AlertTriangle,
+    ChevronLeft,
+    ChevronRight,
+    Download,
+    History,
+    RotateCcw,
+    Trash2,
+} from "lucide-react";
 import {
     clearLocalScanHistory,
     DEFAULT_LOCAL_SCAN_HISTORY_PAGE_SIZE,
@@ -29,20 +37,41 @@ export function LocalScanHistoryList() {
     const [isClearing, setIsClearing] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    // Keeps track of most recent request version.
+    const pageRequestVersionRef = useRef(0);
+
     const loadPage = useCallback(async (nextPage: number) => {
         setIsLoading(true);
         setError(null);
+
+        pageRequestVersionRef.current += 1;
+        const pageRequestId = pageRequestVersionRef.current;
+
         try {
             const result = await getLocalScanHistoryPage(
                 nextPage,
                 DEFAULT_LOCAL_SCAN_HISTORY_PAGE_SIZE
             );
+
+            // Ignore results from older requests that completed after a newer one.
+            if (pageRequestId !== pageRequestVersionRef.current) {
+                return;
+            }
+
             setHistoryPage(result);
             setPage(result.page);
         } catch {
+            // Ignore failure from older requests.
+            if (pageRequestId !== pageRequestVersionRef.current) {
+                return;
+            }
+
             setError("Unable to load local scan history.");
         } finally {
-            setIsLoading(false);
+            // Ignore clean-up from older requests.
+            if (pageRequestId === pageRequestVersionRef.current) {
+                setIsLoading(false);
+            }
         }
     }, []);
 
@@ -67,6 +96,52 @@ export function LocalScanHistoryList() {
             setError("Unable to clear local scan history.");
         } finally {
             setIsClearing(false);
+        }
+    };
+
+    const handleExportCSV = async () => {
+        setError(null);
+        try {
+            const result = await getLocalScanHistoryPage(1, 10000);
+            const allEntries = result.entries;
+            if (!allEntries || allEntries.length === 0) return;
+
+            const headers = [
+                "Date",
+                "Brand Name",
+                "Generic Name",
+                "Batch Number",
+                "Status",
+                "Verification Result",
+            ];
+            const rows = allEntries.map((entry: LocalScanHistoryEntry) => [
+                new Date(entry.scannedAt).toLocaleString(),
+                entry.brandName || "N/A",
+                entry.genericName || "N/A",
+                entry.batchNumber || entry.query || "N/A",
+                entry.status,
+                entry.message || "N/A",
+            ]);
+
+            const csvContent = [
+                headers.join(","),
+                ...rows.map((row: string[]) =>
+                    row.map((val: string) => `"${String(val).replace(/"/g, '""')}"`).join(",")
+                ),
+            ].join("\n");
+
+            const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute(
+                "download",
+                `sahidawa_scan_history_${new Date().toISOString().split("T")[0]}.csv`
+            );
+            link.click();
+            URL.revokeObjectURL(url);
+        } catch {
+            setError("Unable to export local scan history.");
         }
     };
 
@@ -97,6 +172,15 @@ export function LocalScanHistoryList() {
                         className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-(--color-border-muted) bg-(--color-surface-page) text-(--color-text-secondary) transition-colors hover:bg-(--color-surface-muted) disabled:cursor-not-allowed disabled:opacity-50"
                     >
                         <RotateCcw size={18} />
+                    </button>
+                    <button
+                        type="button"
+                        onClick={handleExportCSV}
+                        disabled={!hasEntries || isLoading}
+                        className="inline-flex items-center justify-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-bold text-emerald-700 transition-colors hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:text-emerald-300 dark:hover:bg-emerald-950/40"
+                    >
+                        <Download size={16} />
+                        Export CSV
                     </button>
                     <button
                         type="button"

@@ -1,6 +1,4 @@
 name: 🛡️ PR Quality Check
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 on:
   pull_request:
@@ -25,12 +23,12 @@ jobs:
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Setup Node.js 24
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: 20
           cache: "npm"
 
       - name: Install Dependencies
@@ -75,7 +73,7 @@ jobs:
           # ─────────────────────────────────────────────
           # AI / Spam Detection (Tuned Down)
           # ─────────────────────────────────────────────
-          max-emoji-count: 10
+          max-emoji-count: 30
           max-code-references: 20
           detect-spam-usernames: true
           require-public-profile: false

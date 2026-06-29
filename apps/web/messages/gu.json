@@ -3,6 +3,8 @@
         "title": "તમારું સ્વાસ્થ્ય, ચકાસાયેલ અને સુરક્ષિત.",
         "subtitle": "દવાઓની અસ્સલતા તાત્કાલિક ચકાસવા, સુરક્ષિત ફાર્મસી શોધવા અને મહત્વપૂર્ણ આરોગ્ય સૂચનાઓ મેળવવા માટે ભારતનું ઓપન-સોર્સ નાગરિક પ્લેટફોર્મ.",
         "scan_button": "દવા સ્કૅન કરો",
+        "scan_medicine": "દવા સ્કૅન કરો",
+        "scan_now": "હમણાં સ્કૅન કરો",
         "scan_subtitle": "પૅકેજિંગ અથવા બારકોડ પર કૅમેરા રાખો",
         "upload_photo": "ફોટો અપલોડ કરો",
         "upload_subtitle": "ગૅલેરીમાંથી પસંદ કરો",
@@ -10,8 +12,12 @@
         "voice_subtitle": "લક્ષણો બોલો",
         "pharmacy_map": "ફાર્મસી નકશો",
         "pharmacy_subtitle": "ચકાસાયેલ સ્ટોર શોધો",
+        "find_pharmacy": "ફાર્મસી શોધો",
         "report_fake": "નકલી રિપોર્ટ કરો",
         "report_fake_subtitle": "શંકાસ્પદ દવાની જાણ કરો",
+        "report_subtitle": "શંકાસ્પદ દવાની જાણ કરો",
+        "scheme_eligibility": "યોજના પાત્રતા",
+        "scheme_eligibility_subtitle": "જાહેર આરોગ્ય વીમા પાત્રતા તપાસો",
         "search_placeholder": "દવા અથવા બૅચ શોધો...",
         "search_button": "શોધો",
         "sign_in": "Sign In",
@@ -24,19 +30,33 @@
         "explore_features": "વિશેષતાઓ શોધો",
         "live_cdsco_alerts": "લાઇવ CDSCO સૂચનાઓ",
         "india_region": "ભારત પ્રદેશ",
+        "real_time": "રિયલ ટાઇમ",
+        "alerts_description": "નવીનતમ દવા સુરક્ષા ચેતવણીઓ અને રિકોલ સાથે અપડેટ રહો.",
         "alerts_empty_title": "બધું ઠીક છે!",
         "alerts_empty_description": "હાલમાં કોઈ સક્રિય નિયમનકારી સૂચનાઓ નથી. સુરક્ષિત રહો અને તમારી દવાઓ ચકાસો.",
         "view_full_alert_log": "સંપૂર્ણ સૂચના લૉગ જુઓ",
+        "vaccine_title": "વેક્સિન હબ અને ઇમ્યુનાઇઝેશન ટ્રેકર",
+        "vaccine_subtitle": "વધુ સારી જાહેર આરોગ્ય જાગૃતિ માટે વેક્સિનના સમયપત્રક, સુરક્ષા માહિતી અને સારસંભાળ માર્ગદર્શન મેળવો.",
+        "vaccine_open": "વેક્સિન હબ ખોલો",
         "heroTitle": {
             "prefix": "તમારું સ્વાસ્થ્ય, ",
             "highlight": "ચકાસાયેલ અને સુરક્ષિત."
-        }
+        },
+        "scan_section_title": "દવા સ્કેન અને ચકાસો",
+        "scan_section_subtitle": "બારકોડ અથવા પેકેજ સ્કેનિંગનો ઉપયોગ કરીને દવાની પ્રમાણિકતા ચકાસો.",
+        "powerful_capabilities": "શક્તિશાળી ક્ષમતાઓ",
+        "features_description": "SahiDawa તમને તમારી દવાઓ ચકાસવામાં અને સુરક્ષિત રહેવામાં કઈ રીતે મદદ કરી શકે છે તે બધી રીતો શોધો.",
+        "trusted_by_citizens": "નાગરિકો દ્વારા વિશ્વસનીય",
+        "voices_title": "SahiDawa સમુદાયના અવાજો",
+        "voices_description": "દવા સુરક્ષાને સરળ બનાવવા માટે SahiDawa નો ઉપયોગ કરતા પરિવારો, ફાર્માસિસ્ટો, ડોકટરો અને યોગદાનકર્તાઓ."
     },
     "Navigation": {
         "how_it_works": "તે કેવી રીતે કામ કરે છે",
         "alerts": "સૂચનાઓ",
         "pharmacy_map": "ફાર્મસી નકશો",
         "my_reports": "મારા રિપોર્ટ",
+        "schedule": "સમયપત્રક",
+        "scheme_eligibility": "યોજના પાત્રતા",
         "home": "હોમ",
         "scans": "સ્કૅન",
         "map": "નકશો",
@@ -164,7 +184,7 @@
         "goHome": "હોમ પર જાઓ",
         "footer": "જ્યારે તમારું કનેક્શન પાછું આવશે ત્યારે SahiDawa આપમેળે સિંક થઈ જશે.",
         "cachedContent": "તમે અગાઉ લોડ કરેલ સામગ્રી હજુ પણ ઍક્સેસ કરી શકો છો",
-        "noCache": "આ પૃષ્ઠ કૅશ થયું ન હતું અને ઑફલાઇન ઉપલબ્ধ નથી",
+        "noCache": "આ પૃષ્ઠ કૅશ થયું ન હતું અને ઑફલાઇન ઉપલબ્ધ નથી",
         "redirecting": "તમને SahiDawa પર રીડાયરેક્ટ કરી રહ્યાં છે…",
         "attempt": "(પ્રયાસ {retryCount})",
         "checkingConnection": "કનેક્શન તપાસી રહ્યું છે…",
@@ -308,7 +328,7 @@
             },
             "5": {
                 "question": "શું SahiDawa સાથે મારો ડેટા સુરક્ષિત છે?",
-                "answer": "ખરેખર. SahiDawa તમારો ડેટા વેચતું નથી, જાહેરાતો બતાવતું નથી અને કોઈ પ્રીમિયમ પ્લાન રાખતું નથી. તમારી ગોપનીયતા અમારી સર્વોચ્ચ પ્રાથમિકતા છે."
+                "answer": "ખરેખર. SahiDawa તમારો ડેટા વેચતું નથી, જાહેરાતો બતાવતું નથી અને કોઈ પ્રીમિયમ પ્લાન રાખતું નથી. તમારી ગોપનીયતા અમારી સર્વોચ્ચ પ્રાધાન્ય છે."
             },
             "6": {
                 "question": "હું SahiDawa માં કેવી રીતે યોગદાન આપી શકું?",
@@ -365,18 +385,19 @@
         "placeholder": "Ask me about a medicine...",
         "status": "Online",
         "title": "SahiDawa AI",
-        "welcome": "Hi! I am the SahiDawa AI Assistant. How can I help you with your medicines today?"
+        "welcome": "Hi! I am the SahiDawa AI Assistant. How can I help you with your medicines today?",
+        "tooltipLabel": "AI Health Assistant"
     },
     "Alerts": {
         "backHome": "મુખ્ય પૃષ્ઠ પર પાછા જાઓ",
         "badge": "લાઇવ ચેતવણીઓ",
         "title": "લાઇવ CDSCO ચેતવણીઓ",
-        "subtitle": "CDSCO રજિસ્ટ્રી સાથે સીધી રીતે જોડાયેલ સંપૂર્ણ ઐતિહાસિક સુરક્ષા લોગ.",
+        "subtitle": "CDSCO રજિસ્ટ્રી સાથે સીધી રીતે જોડાયેલ સંપૂર્ણ ઐતિહાસિક સુરક્ષા લૉગ.",
         "regionBadge": "ભારત વિસ્તાર",
         "totalCount": "કુલ સંખ્યા: {count}",
         "brandPlaceholder": "બ્રાન્ડ નામ દ્વારા શોધો...",
         "regionPlaceholder": "રાજ્ય/જિલ્લા દ્વારા ફિલ્ટર કરો...",
-        "error": "સક્રિય લોગ્સ મેળવતી વખતે ડેટાબેઝ સુમેળ ભૂલ આવી.",
+        "error": "સક્રિય લૉગ્સ મેળવતી વખતે ડેટાબેઝ સુમેળ ભૂલ આવી.",
         "loading": "ચેતવણીઓ લોડ થઈ રહી છે...",
         "systemUpdate": "સિસ્ટમ અપડેટ",
         "alertType": "ચેતવણી: {type}",
@@ -391,6 +412,9 @@
     "Compare": {
         "pageTitle": "દવાઓની સરખામણી કરો",
         "pageSubtitle": "બ્રાન્ડ અને જેનરિકની બાજુબાજુ સરખામણી",
+        "reportTitle": "SahiDawa દવા સરખામણી રિપોર્ટ",
+        "generatedOn": "{date} ના રોજ બનાવવામાં આવ્યો",
+        "printExport": "પ્રિન્ટ / PDF નિકાસ કરો",
         "firstMedicine": "પ્રથમ દવા",
         "secondMedicine": "બીજી દવા",
         "searchPlaceholder": "બ્રાન્ડ અથવા જેનરિક નામ શોધો",
@@ -450,11 +474,19 @@
         "exportBackup": "બેકઅપ નિકાસ કરો",
         "importBackup": "બેકઅપ આયાત કરો",
         "importError": "અમાન્ય બેકઅપ ફાઇલ. કૃપા કરીને માન્ય JSON બેકઅપ અપલોડ કરો.",
+        "importDateError": "બેકઅપમાં અમાન્ય તારીખ ફોર્મેટ મળ્યો. બધી તારીખો YYYY-MM-DD ફોર્મેટમાં હોવી જોઈએ.",
         "statusExpired": "સમાપ્ત",
         "statusExpiringSoon": "ટૂંક સમયમાં સમાપ્ત થશે ({days} દિવસ)",
-        "statusSafe": "સુરક્ષિત"
+        "statusSafe": "સુરક્ષિત",
+        "exportCSV": "CSV નિકાસ કરો",
+        "exportPDF": "PDF નિકાસ કરો",
+        "print": "પ્રિન્ટ કરો",
+        "csvExportSuccess": "CSV સફળતાપૂર્વક નિકાસ કરવામાં આવ્યું",
+        "pdfExportSuccess": "PDF સફળતાપૂર્વક નિકાસ કરવામાં આવ્યું",
+        "noMedicinesToDisplay": "દર્શાવવા માટે કોઈ દવાઓ નથી",
+        "generatedOn": " સમયમાં સમાપ્ત થ",
+        "deleteMedicine": "દવા કાઢી નાખો"
     },
-
     "Login": {
         "brandSubtitle": "દવા સુરક્ષા પ્લેટફોર્મ",
         "heading": "ફરીથી સ્વાગત છે",
@@ -464,6 +496,7 @@
             "description": "Supabase URL અથવા anon key ઉપલબ્ધ નથી. સાઇન ઇન કરતા પહેલાં environment variables ઉમેરો."
         },
         "googleButton": "Google સાથે ચાલુ રાખો",
+        "githubButton": "GitHub સાથે ચાલુ રાખો",
         "emailSeparator": "અથવા ઇમેઇલ સાથે ચાલુ રાખો",
         "emailLabel": "ઇમેઇલ સરનામું",
         "emailPlaceholder": "you@example.com",
@@ -477,7 +510,9 @@
         "errors": {
             "databaseNotConfigured": "આ પર્યાવરણ માટે પ્રમાણીકરણ ગોઠવાયેલ નથી.",
             "generic": "સાઇન ઇન કરવામાં અસમર્થ. કૃપા કરીને ફરી પ્રયાસ કરો."
-        }
+        },
+        "signUpPrompt": "Don't have an account?",
+        "signUpLink": "Sign up"
     },
     "AdminLayout": {
         "accessDeniedTitle": "પ્રવેશ નકારવામાં આવ્યો",
@@ -490,7 +525,7 @@
         "nav": {
             "reports": "રિપોર્ટ્સ",
             "medicine": "દવા માસ્ટર",
-            "logs": "ઓડિટ લોગ્સ"
+            "logs": "ઓડિટ લૉગ્સ"
         },
         "header": {
             "title": "મોડરેશન ડેશબોર્ડ",
@@ -503,7 +538,7 @@
             "addMedicine": "દવા ઉમેરો",
             "save": "સાચવો",
             "cancel": "રદ કરો",
-            "goToLogin": "લોગિન પર જાઓ",
+            "goToLogin": "લૉગિન પર જાઓ",
             "markFake": "નકલી તરીકે ચિહ્નિત કરો",
             "falseAlarm": "ખોટી ચેતવણી"
         },
@@ -541,10 +576,10 @@
             "banned": "પ્રતિબંધિત"
         },
         "logs": {
-            "title": "ઓડિટ લોગ્સ",
+            "title": "ઓડિટ લૉગ્સ",
             "subtitle": "તાજેતરની મોડરેશન અને દવા કેટલોગ પ્રવૃત્તિ",
-            "loading": "લોગ્સ લોડ થઈ રહ્યા છે...",
-            "empty": "હજુ સુધી કોઈ ઓડિટ લોગ નથી"
+            "loading": "લૉગ્સ લોડ થઈ રહ્યા છે...",
+            "empty": "હજુ સુધી કોઈ ઓડિટ લૉગ નથી"
         },
         "reports": {
             "title": "આવતી રિપોર્ટ્સ",
@@ -637,39 +672,161 @@
         "nav_compare": "Compare Medicines",
         "nav_vaccine": "Vaccine Hub",
         "nav_reports": "My Reports",
+        "nav_schedule": "દવા સમયપત્રક",
         "nav_profile": "My Profile"
     },
-  "medicineSafety": {
-    "guideTitle": "ઉપયોગ અને સુરક્ષા માર્ગદર્શિકા",
-    "noDosageInfo": "આ વય જૂથ માટે ડોઝની માહિતી ઉપલબ્ધ નથી.",
-    "closeButton": "સુરક્ષા માહિતી બંધ કરો",
-    "tabs": {
-      "sideEffects": "આડઅસરો",
-      "dosage": "ડોઝ",
-      "dietaryIntake": "આહાર"
+    "medicineSafety": {
+        "guideTitle": "ઉપયોગ અને સુરક્ષા માર્ગદર્શિકા",
+        "noDosageInfo": "આ વય જૂથ માટે ડોઝની માહિતી ઉપલબ્ધ નથી.",
+        "closeButton": "સુરક્ષા માહિતી બંધ કરો",
+        "tabs": {
+            "sideEffects": "આડઅસરો",
+            "dosage": "ડોઝ",
+            "dietaryIntake": "આહાર"
+        },
+        "sideEffects": {
+            "standardSymptoms": "સામાન્ય લક્ષણો",
+            "severeRedFlags": "ગંભીર ચેતવણીઓ — તાત્કાલિક તબીબી સહાય લો"
+        },
+        "dosage": {
+            "tabs": {
+                "kids": "બાળકો",
+                "adults": "વયસ્કો",
+                "elderly": "વૃદ્ધો"
+            },
+            "doseLabel": "ડોઝ:",
+            "frequencyLabel": "આવર્તન:",
+            "notesHeading": "નોંધો",
+            "warningsHeading": "ચેતવણીઓ"
+        },
+        "dietary": {
+            "tabs": {
+                "dietaryIntake": "આહાર"
+            },
+            "storageHeading": "સંગ્રહ",
+            "pregnancyHeading": "ગર્ભાવસ્થા"
+        },
+        "disclaimer": "આ માહિતી શૈક્ષણિક હેતુ માટે છે અને વ્યાવસાયિક તબીબી સલાહનો વિકલ્પ નથી."
     },
-    "sideEffects": {
-      "standardSymptoms": "સામાન્ય લક્ષણો",
-      "severeRedFlags": "ગંભીર ચેતવણીઓ — તાત્કાલિક તબીબી સહાય લો"
+    "SchemeEligibility": {
+        "validationAgeError": "કૃપા કરીને માન્ય ઉંમર દાખલ કરો.",
+        "validationStateError": "કૃપા કરીને એક રાજ્ય પસંદ કરો.",
+        "validationIncomeError": "કૃપા કરીને માન્ય વાર્ષિક આવક દાખલ કરો.",
+        "validationFamilySizeError": "કૃપા કરીને કુટુંબના સભ્યોની માન્ય સંખ્યા દાખલ કરો.",
+        "eligibilityCheckedSuccess": "પાત્રતા સફળતાપૂર્વક ચકાસવામાં આવી!",
+        "eligibilityCheckFailed": "પાત્રતા ચકાસવામાં નિષ્ફળતા. કૃપા કરીને ફરી પ્રયાસ કરો.",
+        "title": "તમારી <highlight>યોજના પાત્રતા</highlight> ચકાસો",
+        "description": "૩ સરળ પગલાંમાં જાણો કે તમે અને તમારો પરિવાર કઈ સરકારી સ્વાસ્થ્ય યોજનાઓ માટે પાત્ર છો.",
+        "stepDemographics": "વસ્તી વિષયક માહિતી",
+        "stepIncomeFamily": "આવક અને પરિવાર",
+        "stepIdentification": "ઓળખ",
+        "ageLabel": "તમારી ઉંમર કેટલી છે?",
+        "ageDescription": "ઉંમર વરિષ્ઠ નાગરિક આરોગ્ય કવરેજ ચકાસવામાં મદદ કરે છે.",
+        "agePlaceholder": "દા.ત. 45",
+        "stateLabel": "તમે કયા રાજ્યમાં રહો છો?",
+        "stateDescription": "સરકારી આરોગ્ય વીમા કાર્યક્રમો રાજ્ય પ્રમાણે અલગ-અલગ હોય છે.",
+        "incomeLabel": "તમારા પરિવારની કુલ વાર્ષિક આવક કેટલી છે?",
+        "incomeDescription": "દર વર્ષે રૂપિયામાં તમારા ઘરની કુલ સંયુક્ત આવક.",
+        "incomePlaceholder": "દા.ત. 120000",
+        "familySizeLabel": "તમારા પરિવારમાં કેટલા સભ્યો છે?",
+        "familySizeDescription": "ઘરમાં સાથે રહેતા કુલ પરિવારના સભ્યો.",
+        "familySizePlaceholder": "દા.ત. 5",
+        "bplQuestion": "શું તમારી પાસે BPL કાર્ડ છે?",
+        "abhaQuestion": "શું તમારી પાસે ABHA ID છે?",
+        "yesOption": "હા, મારી પાસે છે",
+        "noOption": "ના, મારી પાસે નથી",
+        "backButton": "પાછા જાઓ",
+        "nextButton": "આગળનું પગલું",
+        "findSchemesButton": "યોજનાઓ શોધો",
+        "checkingButton": "ચકાસણી ચાલુ છે...",
+        "resultsTitle": "તમારી પાત્ર યોજનાઓ",
+        "resultsDescription": "અમને <countTag>{count} યોજનાઓ</countTag> મળી છે જેના માટે તમે પાત્ર છો.",
+        "eligibleBadge": "પાત્ર",
+        "benefitsCoverage": "લાભો / કવરેજ",
+        "howToApply": "કેવી રીતે અરજી કરવી",
+        "visitOfficialPortal": "સત્તાવાર પોર્ટલની મુલાકાત લો",
+        "noSchemesTitle": "કોઈ યોજનાઓ મળી નથી.",
+        "noSchemesDescription": "કૃપા કરીને ગ્રામ પંચાયત અધિકારી અથવા સ્થાનિક સરકારી કેન્દ્રનો સંપર્ક કરો.",
+        "printPdfButton": "પ્રિન્ટ કરો / પીડીએફ તરીકે સાચવો",
+        "checkAgainButton": "ફરીથી તપાસો",
+        "printBrandTitle": "SahiDawa — ગ્રામીણ આરોગ્ય સેતુ",
+        "printReportTitle": "સરકારી આરોગ્ય યોજના પાત્રતા અહેવાલ",
+        "dateGenerated": "તૈયાર કર્યા તારીખ",
+        "website": "વેબસાઇટ",
+        "age": "ઉંમર",
+        "years": "વર્ષ",
+        "stateOfResidence": "રહેઠાણનું રાજ્ય",
+        "annualFamilyIncome": "વાર્ષિક કૌટુંબિક આવક",
+        "familySize": "પરિવારના સભ્યો",
+        "members": "સભ્યો",
+        "bplRationCardHolder": "BPL રેશન કાર્ડ ધારક",
+        "abhaHealthIdHolder": "ABHA હેલ્થ ID ધારક",
+        "yes": "હા",
+        "no": "ના"
     },
-    "dosage": {
-      "tabs": {
-        "kids": "બાળકો",
-        "adults": "વયસ્કો",
-        "elderly": "વૃદ્ધો"
-      },
-      "doseLabel": "ડોઝ:",
-      "frequencyLabel": "આવર્તન:",
-      "notesHeading": "નોંધો",
-      "warningsHeading": "ચેતવણીઓ"
+    "Health": {
+        "quickActions": "Quick actions",
+        "scanMedicine": "Scan Medicine",
+        "verifyAuthenticity": "Verify authenticity",
+        "checkSymptoms": "Check Symptoms",
+        "symptomGuidance": "AI-assisted guidance",
+        "findPharmacy": "Find Pharmacy",
+        "locateStores": "Locate verified stores",
+        "replyFallback": "I'm here to help! Could you rephrase that?",
+        "tooManyRequests": "Too many requests. Please try again in a few moments.",
+        "failedResponse": "Failed to generate AI response",
+        "genericError": "Something went wrong",
+        "returnHome": "Return to chat home",
+        "chatConversation": "Chat conversation",
+        "startVoice": "Start voice input",
+        "stopVoice": "Stop voice input",
+        "healthQuestion": "Type your health question",
+        "voiceBrowserRequired": "Voice input is not supported in this browser.",
+        "listening": "Listening... speak clearly",
+        "placeholder": "Type your health concern...",
+        "sendMessage": "Send message",
+        "footer": "For informational use only • Consult a doctor"
     },
-    "dietary": {
-      "tabs": {
-        "dietaryIntake": "આહાર"
-      },
-      "storageHeading": "સંગ્રહ",
-      "pregnancyHeading": "ગર્ભાવસ્થા"
-    },
-    "disclaimer": "આ માહિતી શૈક્ષણિક હેતુ માટે છે અને વ્યાવસાયિક તબીબી સલાહનો વિકલ્પ નથી."
-  }
+    "SignUp": {
+        "brandSubtitle": "Medicine safety platform",
+        "heading": "Create your account",
+        "description": "Join SahiDawa to track medicine safety reports and verification results.",
+        "missingConfig": {
+            "title": "Authentication is not configured",
+            "description": "Supabase URL or anon key is missing. Add the environment variables before signing up."
+        },
+        "googleButton": "Continue with Google",
+        "githubButton": "Continue with Github",
+        "emailSeparator": "or continue with email",
+        "fullNameLabel": "Full name",
+        "fullNamePlaceholder": "Your full name",
+        "emailLabel": "Email address",
+        "emailPlaceholder": "you@example.com",
+        "passwordLabel": "Password",
+        "passwordPlaceholder": "Create a password",
+        "confirmPasswordLabel": "Confirm password",
+        "confirmPasswordPlaceholder": "Re-enter your password",
+        "showPassword": "Show password",
+        "hidePassword": "Hide password",
+        "showConfirmPassword": "Show confirm password",
+        "hideConfirmPassword": "Hide confirm password",
+        "signingUp": "Creating account...",
+        "signUp": "Sign Up",
+        "footerPrompt": "Already have an account?",
+        "signInLink": "Sign in",
+        "bottomText": "Protected access for SahiDawa community tools.",
+        "success": "Account created successfully! Redirecting...",
+        "successConfirmEmail": "Account created! Check your email to confirm your account before signing in.",
+        "errors": {
+            "databaseNotConfigured": "Authentication is not configured for this environment.",
+            "generic": "Unable to create account. Please try again.",
+            "fullNameRequired": "Full name is required.",
+            "emailRequired": "Email address is required.",
+            "emailInvalid": "Please enter a valid email address.",
+            "passwordRequired": "Password is required.",
+            "passwordWeak": "Password must be at least 8 characters and include uppercase, lowercase, and a number.",
+            "confirmPasswordRequired": "Please confirm your password.",
+            "passwordMismatch": "Passwords do not match."
+        }
+    }
 }

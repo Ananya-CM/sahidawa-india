@@ -8,8 +8,10 @@ import { supabase } from "../db/client";
 import { getMlServiceUrl, MISSING_ML_SERVICE_URL_MESSAGE } from "../config/mlService";
 import { validateUploadSize } from "../middleware/uploadSizeValidator";
 import { uploadRateLimiter } from "../middleware/uploadRateLimit";
+import { scanQueryLimiter } from "../middleware/rateLimit";
+import { redisClient } from "../utils/redis";
 
-import { escapeIlike } from "../utils/db";
+import { escapeIlike, escapePostgrest, buildOrConditions } from "../utils/db";
 
 const router = Router();
 
@@ -24,7 +26,11 @@ const ALLOWED_MIME_TYPES = new Set([
 
 const UPLOAD_DIR = path.join(__dirname, "../../temp-uploads");
 if (!fs.existsSync(UPLOAD_DIR)) {
-    fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+    fs.mkdirSync(UPLOAD_DIR, { recursive: true, mode: 0o700 });
+} else {
+    // mode only applies on creation — enforce on every boot in case the
+    // directory already existed with looser permissions from a prior run
+    fs.chmodSync(UPLOAD_DIR, 0o700);
 }
 
 // Security: reject non-image uploads before they reach the ML container
@@ -194,33 +200,18 @@ function calculateAdvancedMatchScore(ocrText: string, candidate: string): number
 router.post("/extract", uploadRateLimiter, validateUploadSize, (req: Request, res: Response) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (upload.single("file") as any)(req, res, async (multerErr: unknown) => {
-        let tempFilePath: string | undefined;
-
-        if (multerErr) {
-            const msg = multerErr instanceof Error ? multerErr.message : "File upload error";
-            logger.warn(`File upload rejected: ${msg}`);
-            res.status(400).json({ error: msg });
-            return;
-        }
-
-        // After multer runs, req.file is populated by the @types/multer augmentation
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const file: Express.Multer.File | undefined = (req as any).file;
 
-        if (!file || !file.filename) {
-            res.status(400).json({ error: "No image file provided." });
-            return;
-        }
+        // Capture the path FIRST, before checking multerErr — multer's disk
+        // storage engine may have already written the file even when an error
+        // (e.g. a fileFilter rejection or size-limit) is reported afterward.
+        // Security: path.basename + path.join still guards against traversal (CodeQL).
+        const tempFilePath: string | undefined = file?.filename
+            ? path.join(UPLOAD_DIR, path.basename(file.filename))
+            : undefined;
 
-        // Security: Prevent path traversal (CodeQL) by ensuring the path only resolves within UPLOAD_DIR
-        const safeFilename = path.basename(file.filename);
-        tempFilePath = path.join(UPLOAD_DIR, safeFilename);
-
-        const mlServiceUrl = getMlServiceUrl();
-        if (!mlServiceUrl) {
-            logger.error(MISSING_ML_SERVICE_URL_MESSAGE, { route: "/api/v1/scan/extract" });
-
-            // Clean up temp file before returning
+        const cleanupTempFile = () => {
             if (tempFilePath && fs.existsSync(tempFilePath)) {
                 try {
                     fs.unlinkSync(tempFilePath);
@@ -229,6 +220,34 @@ router.post("/extract", uploadRateLimiter, validateUploadSize, (req: Request, re
                     logger.error(`Failed to delete temp file ${tempFilePath}:`, err);
                 }
             }
+        };
+
+        if (multerErr) {
+            const msg = multerErr instanceof Error ? multerErr.message : "File upload error";
+            logger.warn(`File upload rejected: ${msg}`);
+            cleanupTempFile();
+            res.status(400).json({ error: msg });
+            return;
+        }
+
+        if (!file || !file.filename) {
+            res.status(400).json({ error: "No image file provided." });
+            return;
+        }
+
+        if (!tempFilePath) {
+            // Should be unreachable given the check above, but keeps TS's
+            // narrowing happy and guards against a future refactor breaking the invariant
+            logger.error("tempFilePath unexpectedly undefined after file validation");
+            res.status(500).json({ error: "Internal upload error" });
+            return;
+        }
+
+        const mlServiceUrl = getMlServiceUrl();
+        if (!mlServiceUrl) {
+            logger.error(MISSING_ML_SERVICE_URL_MESSAGE, { route: "/api/v1/scan/extract" });
+
+            cleanupTempFile();
 
             res.status(500).json({
                 error: "OCR service is not configured.",
@@ -369,12 +388,7 @@ router.post("/extract", uploadRateLimiter, validateUploadSize, (req: Request, re
 
                 if (searchWords.length > 0) {
                     // Build OR filter: brand_name ILIKE any word OR generic_name ILIKE any word
-                    const orFilter = searchWords
-                        .map((w) => {
-                            const safe = escapeIlike(w);
-                            return `brand_name.ilike.%${safe}%,generic_name.ilike.%${safe}%`;
-                        })
-                        .join(",");
+                    const orFilter = buildOrConditions(["brand_name", "generic_name"], searchWords);
 
                     const { data: dbMedicines, error: dbError } = await supabase
                         .from("medicines")
@@ -504,10 +518,12 @@ router.post("/extract", uploadRateLimiter, validateUploadSize, (req: Request, re
                         .select(
                             "id, brand_name, generic_name, manufacturer, batch_number, " +
                                 "expiry_date, cdsco_approval_status, is_counterfeit_alert, " +
+                                "is_cdsco_verified, cdsco_match_score, matched_cdsco_product, " +
+                                "matched_cdsco_manufacturer, product_match_score, manufacturer_match_score, " +
                                 "composition, mrp, jan_aushadhi_price"
                         )
                         .or(
-                            `brand_name.ilike.%${escapeIlike(matchedName)}%,generic_name.ilike.%${escapeIlike(matchedName)}%`
+                            `brand_name.ilike."%${escapePostgrest(matchedName!)}%",generic_name.ilike."%${escapePostgrest(matchedName!)}%"`
                         )
                         .limit(1)
                         .maybeSingle();
@@ -549,6 +565,7 @@ router.post("/extract", uploadRateLimiter, validateUploadSize, (req: Request, re
             let medicineResponse = null;
             if (medicineData) {
                 medicineResponse = {
+                    id: medicineData.id,
                     brand_name: medicineData.brand_name,
                     generic_name: medicineData.generic_name,
                     manufacturer: medicineData.manufacturer,
@@ -557,6 +574,12 @@ router.post("/extract", uploadRateLimiter, validateUploadSize, (req: Request, re
                     expiry_date: parsedExpiry || medicineData.expiry_date,
                     cdsco_approval_status: medicineData.cdsco_approval_status,
                     is_counterfeit_alert: medicineData.is_counterfeit_alert,
+                    is_cdsco_verified: medicineData.is_cdsco_verified,
+                    cdsco_match_score: medicineData.cdsco_match_score,
+                    matched_cdsco_product: medicineData.matched_cdsco_product,
+                    matched_cdsco_manufacturer: medicineData.matched_cdsco_manufacturer,
+                    product_match_score: medicineData.product_match_score,
+                    manufacturer_match_score: medicineData.manufacturer_match_score,
                     // Pricing — helps citizens compare branded vs Jan Aushadhi price
                     mrp: medicineData.mrp ?? null,
                     jan_aushadhi_price: medicineData.jan_aushadhi_price ?? null,
@@ -585,13 +608,7 @@ router.post("/extract", uploadRateLimiter, validateUploadSize, (req: Request, re
                 details: msg,
             });
         } finally {
-            if (tempFilePath && fs.existsSync(tempFilePath)) {
-                try {
-                    fs.unlinkSync(tempFilePath);
-                } catch (err) {
-                    logger.error(`Failed to delete temp file ${tempFilePath}:`, err);
-                }
-            }
+            cleanupTempFile();
         }
     });
 });
@@ -621,11 +638,27 @@ router.post("/extract", uploadRateLimiter, validateUploadSize, (req: Request, re
  *       200:
  *         description: Match suggestions found
  */
-router.post("/match", async (req: Request, res: Response) => {
+router.post("/match", scanQueryLimiter, async (req: Request, res: Response) => {
     const { query } = req.body;
     if (!query || typeof query !== "string") {
         res.status(400).json({ error: "query parameter is required and must be a string" });
         return;
+    }
+
+    const normalizedQuery = query.trim().toLowerCase();
+    const cacheKey = `match_cache:${normalizedQuery}`;
+
+    try {
+        if (redisClient.isOpen) {
+            const cached = await redisClient.get(cacheKey);
+            if (cached) {
+                logger.info(`Cache HIT for match query: "${query}"`);
+                res.status(200).json(JSON.parse(cached));
+                return;
+            }
+        }
+    } catch (cacheErr) {
+        logger.error(`Redis error reading cache for match query: ${cacheErr}`);
     }
 
     try {
@@ -641,6 +674,47 @@ router.post("/match", async (req: Request, res: Response) => {
         }
 
         if (!data || data.length === 0) {
+            const words = query
+                .trim()
+                .split(/\s+/)
+                .filter((w: string) => w.length > 2);
+            if (words.length > 1) {
+                const orConditions = buildOrConditions(["brand_name", "generic_name"], words);
+
+                const { data: fallback } = await supabase
+                    .from("medicines")
+                    .select("brand_name, generic_name")
+                    .or(orConditions)
+                    .limit(3);
+                if (fallback && fallback.length > 0) {
+                    const fallbackResult = fallback.map(
+                        (m: { brand_name: string | null; generic_name: string }) => ({
+                            name: m.brand_name || m.generic_name,
+                            score: 60,
+                        })
+                    );
+
+                    try {
+                        if (redisClient.isOpen)
+                            await redisClient.set(cacheKey, JSON.stringify(fallbackResult), {
+                                EX: 3600,
+                            });
+                    } catch (err) {
+                        /* ignore */
+                    }
+
+                    res.status(200).json(fallbackResult);
+                    return;
+                }
+            }
+
+            try {
+                if (redisClient.isOpen)
+                    await redisClient.set(cacheKey, JSON.stringify([]), { EX: 3600 });
+            } catch (err) {
+                /* ignore */
+            }
+
             res.status(200).json([]);
             return;
         }
@@ -655,6 +729,13 @@ router.post("/match", async (req: Request, res: Response) => {
                 score: Math.round((medicine.similarity ?? 0) * 100),
             })
         );
+
+        try {
+            if (redisClient.isOpen)
+                await redisClient.set(cacheKey, JSON.stringify(matches), { EX: 3600 });
+        } catch (err) {
+            /* ignore */
+        }
 
         res.status(200).json(matches);
     } catch (err) {
@@ -687,21 +768,37 @@ router.post("/match", async (req: Request, res: Response) => {
  *       200:
  *         description: Medicine verified successfully
  */
-router.post("/verify-brand", async (req: Request, res: Response) => {
+router.post("/verify-brand", scanQueryLimiter, async (req: Request, res: Response) => {
     const { brandName } = req.body;
     if (!brandName || typeof brandName !== "string") {
         res.status(400).json({ error: "brandName is required and must be a string" });
         return;
     }
 
+    const normalizedBrand = brandName.trim().toLowerCase();
+    const cacheKey = `brand_cache:${normalizedBrand}`;
+
+    try {
+        if (redisClient.isOpen) {
+            const cached = await redisClient.get(cacheKey);
+            if (cached) {
+                logger.info(`Cache HIT for verify-brand: "${brandName}"`);
+                res.status(200).json(JSON.parse(cached));
+                return;
+            }
+        }
+    } catch (cacheErr) {
+        logger.error(`Redis error reading cache for verify-brand: ${cacheErr}`);
+    }
+
     try {
         const { data, error } = await supabase
             .from("medicines")
             .select(
-                "brand_name, generic_name, manufacturer, batch_number, expiry_date, cdsco_approval_status, is_counterfeit_alert"
+                "id, brand_name, generic_name, manufacturer, batch_number, expiry_date, cdsco_approval_status, is_counterfeit_alert, is_cdsco_verified, cdsco_match_score, matched_cdsco_product, matched_cdsco_manufacturer, product_match_score, manufacturer_match_score"
             )
             .or(
-                `brand_name.ilike.%${escapeIlike(brandName)}%,generic_name.ilike.%${escapeIlike(brandName)}%`
+                `brand_name.ilike."%${escapePostgrest(brandName)}%",generic_name.ilike."%${escapePostgrest(brandName)}%"`
             )
             .limit(1)
             .maybeSingle();
@@ -723,9 +820,10 @@ router.post("/verify-brand", async (req: Request, res: Response) => {
             return;
         }
 
-        res.status(200).json({
+        const responseData = {
             verified: true,
             medicine: {
+                id: data.id,
                 brand_name: data.brand_name,
                 generic_name: data.generic_name,
                 manufacturer: data.manufacturer,
@@ -733,8 +831,23 @@ router.post("/verify-brand", async (req: Request, res: Response) => {
                 expiry_date: data.expiry_date,
                 cdsco_approval_status: data.cdsco_approval_status,
                 is_counterfeit_alert: data.is_counterfeit_alert,
+                is_cdsco_verified: data.is_cdsco_verified,
+                cdsco_match_score: data.cdsco_match_score,
+                matched_cdsco_product: data.matched_cdsco_product,
+                matched_cdsco_manufacturer: data.matched_cdsco_manufacturer,
+                product_match_score: data.product_match_score,
+                manufacturer_match_score: data.manufacturer_match_score,
             },
-        });
+        };
+
+        try {
+            if (redisClient.isOpen)
+                await redisClient.set(cacheKey, JSON.stringify(responseData), { EX: 86400 }); // 24 hours
+        } catch (err) {
+            /* ignore */
+        }
+
+        res.status(200).json(responseData);
     } catch (err) {
         const msg = err instanceof Error ? err.message : "Unknown error";
         logger.error(`Error during verify-brand: ${msg}`);

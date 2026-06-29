@@ -16,6 +16,8 @@
         "report_fake": "Report Fake",
         "report_subtitle": "Report suspicious medicine",
         "report_fake_subtitle": "Report suspicious medicine",
+        "scheme_eligibility": "Scheme Eligibility",
+        "scheme_eligibility_subtitle": "Check public health insurance eligibility",
         "search_placeholder": "Search medicine or batch...",
         "search_button": "Search",
         "sign_in": "Sign In",
@@ -39,20 +41,88 @@
         "heroTitle": {
             "prefix": "Your Health, ",
             "highlight": "Verified & Protected."
-        }
+        },
+        "scan_section_title": "Scan & Verify Medicine",
+        "scan_section_subtitle": "Verify medicine authenticity using barcode or package scanning.",
+        "powerful_capabilities": "Powerful Capabilities",
+        "features_description": "Discover all the ways SahiDawa can help you verify your medicines and stay safe.",
+        "trusted_by_citizens": "Trusted by citizens",
+        "voices_title": "Voices from the SahiDawa community",
+        "voices_description": "Families, pharmacists, doctors, and contributors using SahiDawa to make medicine safety easier to act on."
+    },
+    "A11y": {
+        "confirmClearConversation": "Confirm clear conversation",
+        "cancelClearConversation": "Cancel clear conversation",
+        "goToHomepage": "Go to homepage",
+        "closeChat": "Close chat",
+        "sendMessage": "Send message",
+        "openAiChat": "Open AI chat",
+        "closeAiChat": "Close AI chat",
+        "mainNavigation": "Main navigation",
+        "mobileNavigation": "Mobile navigation",
+        "toggleSystemParameters": "Toggle system parameters"
     },
     "Navigation": {
         "how_it_works": "How it Works",
         "alerts": "Alerts",
         "pharmacy_map": "Pharmacy Map",
         "my_reports": "My Reports",
+        "schedule": "Schedule",
+        "scheme_eligibility": "Scheme Eligibility",
+        "calculator": "Savings Calculator",
         "home": "Home",
         "scans": "Scans",
         "map": "Map",
         "profile": "Profile",
-        "language": "English"
+        "language": "English",
+        "more": "More"
+    },
+    "Accessibility": {
+        "logo": "SahiDawa Logo",
+        "health_companion": "Health Companion",
+        "select_language": "Select language",
+        "language_options": "Language options",
+        "go_back": "Go back to previous page",
+        "go_back_short": "Go back",
+        "current_language": "Current language: {language}",
+        "toggle_theme": "Toggle theme",
+        "switch_light": "Switch to light mode",
+        "switch_dark": "Switch to dark mode"
+    },
+    "Health": {
+        "quickActions": "Quick actions",
+        "scanMedicine": "Scan Medicine",
+        "verifyAuthenticity": "Verify authenticity",
+        "checkSymptoms": "Check Symptoms",
+        "symptomGuidance": "AI-assisted guidance",
+        "findPharmacy": "Find Pharmacy",
+        "locateStores": "Locate verified stores",
+        "replyFallback": "I'm here to help! Could you rephrase that?",
+        "tooManyRequests": "Too many requests. Please try again in a few moments.",
+        "failedResponse": "Failed to generate AI response",
+        "genericError": "Something went wrong",
+        "returnHome": "Return to chat home",
+        "chatConversation": "Chat conversation",
+        "startVoice": "Start voice input",
+        "stopVoice": "Stop voice input",
+        "healthQuestion": "Type your health question",
+        "voiceBrowserRequired": "Voice input is not supported in this browser.",
+        "listening": "Listening... speak clearly",
+        "placeholder": "Type your health concern...",
+        "sendMessage": "Send message",
+        "footer": "For informational use only • Consult a doctor"
     },
     "Scan": {
+        "calculateSavings": "Calculate Savings",
+        "scanMedicine": "Scan Medicine",
+        "positionBarcode": "Position the Barcode",
+        "enterBatchNumber": "Enter Batch Number",
+        "verify": "Verify",
+        "batchNumberHelp": "Enter the batch number printed on the medicine package",
+        "viewHistory": "View History",
+        "stopScanner": "Stop Scanner",
+        "scanBarcode": "Scan Barcode",
+        "uploadPhoto": "Upload Photo",
         "share": {
             "button": "Share Result",
             "title": "SahiDawa Medicine Verification Result",
@@ -70,7 +140,18 @@
             "shared_success": "Result shared successfully",
             "copy_success": "Result copied to clipboard",
             "failure": "Unable to share this result right now"
-        }
+        },
+        "showMoreDetails": "Show More Details",
+        "showLess": "Show Less",
+        "genericName": "Generic Name",
+        "dosageForm": "Dosage Form",
+        "composition": "Composition",
+        "ScanBarcode": "Scan Barcode",
+        "offlineVerify": "Queue Scan",
+
+        "batch_recalled_title": "This batch has been recalled",
+        "batch_recalled_body": "Please do not use this medicine. Return it to your pharmacy immediately.",
+        "save_to_abha": "Save to ABHA Record"
     },
     "BackToTopButton": {
         "label": "Back to top"
@@ -201,6 +282,15 @@
         "cachedVerifications": "Cached Verifications",
         "savedPharmacies": "Saved Pharmacies",
         "browsedMedicines": "Browsed Medicines"
+    },
+    "ScanQueue": {
+        "title": "Pending Verifications",
+        "subtitle": "Scans waiting to be verified when you're back online",
+        "queued": "Scan saved locally. Verification will resume automatically.",
+        "syncing": "Verifying {count} queued scans...",
+        "synced": "{count} queued scan(s) verified successfully.",
+        "pendingBadge": "Pending",
+        "empty": "No pending scans"
     },
     "contact": {
         "badge": "GSSoC 2026 Open Source Project",
@@ -374,7 +464,8 @@
         "title": "SahiDawa AI",
         "status": "Online",
         "welcome": "Hi! I am the SahiDawa AI Assistant. How can I help you with your medicines today?",
-        "placeholder": "Ask me about a medicine..."
+        "placeholder": "Ask me about a medicine...",
+        "tooltipLabel": "AI Health Assistant"
     },
     "Alerts": {
         "backHome": "Back to Home Page",
@@ -436,10 +527,53 @@
             "banned": "Banned"
         }
     },
+    "Calculator": {
+        "pageTitle": "Medicine Cost Savings Calculator",
+        "pageSubtitle": "Discover generic equivalents and calculate your savings",
+        "searchLabel": "Select a medicine to calculate savings",
+        "searchPlaceholder": "Search brand or generic name",
+        "loading": "Loading generic alternatives...",
+        "error": "Failed to fetch alternative details.",
+        "brandPriceLabel": "Brand Price (MRP)",
+        "genericPriceLabel": "Jan Aushadhi Price",
+        "brandName": "Brand Name",
+        "genericName": "Generic Alternative",
+        "savingsLabel": "Savings per purchase",
+        "alternativeTitle": "Jan Aushadhi Alternative Details",
+        "noAlternative": "No Jan Aushadhi generic alternative mapped for this medicine yet.",
+        "quantityLabel": "Quantity (Strips/Packs per Month)",
+        "monthlySavings": "Monthly Savings",
+        "yearlySavings": "Annual Savings",
+        "perPurchaseSavings": "Savings Per Purchase",
+        "dosageSectionTitle": "Input Purchase Quantity",
+        "projectionsTitle": "Estimated Cost Savings Projections",
+        "brandCostLabel": "Brand Cost",
+        "genericCostLabel": "Generic Cost",
+        "costPerMonth": "per month",
+        "brandTierTitle": "Brand Prescribed",
+        "brandTierDesc": "Standard commercial brand price",
+        "genericTierTitle": "Generic Alternative",
+        "genericTierDesc": "Commercial branded generic equivalent",
+        "janAushadhiTierTitle": "Jan Aushadhi Generic",
+        "janAushadhiTierDesc": "Government-subsidized price-controlled generic",
+        "bestValue": "Best Value",
+        "mrpLabel": "MRP",
+        "estimatedLabel": "(Estimated)",
+        "costPerMonthGeneric": "Generic Cost",
+        "costPerMonthJanAushadhi": "Jan Aushadhi Cost",
+        "costPerMonthBrand": "Brand Cost",
+        "packUnit": "pack",
+        "packsUnit": "packs"
+    },
     "ExpiryTracker": {
         "title": "Medicine Expiry Tracker",
         "subtitle": "Manage and track your medicine stock locally",
         "addMedicine": "Add Medicine",
+        "editMedicine": "Edit Medicine",
+        "saveChanges": "Save Changes",
+        "cancel": "Cancel",
+        "notesLabel": "Notes (Optional)",
+        "notesPlaceholder": "Storage instructions or dosage notes...",
         "name": "Name",
         "expiryDate": "Expiry Date",
         "batchNumber": "Batch Number (Optional)",
@@ -459,13 +593,48 @@
         "filterExpired": "Expired",
         "filterExpiringSoon": "Expiring Soon",
         "filterSafe": "Safe",
+        "print": "Print",
+        "exportPDF": "Export PDF",
         "exportBackup": "Export Backup",
         "importBackup": "Import Backup",
         "importError": "Invalid backup file. Please upload a valid JSON backup.",
         "importDateError": "Invalid date format found in backup. All dates must be in YYYY-MM-DD format.",
         "statusExpired": "Expired",
         "statusExpiringSoon": "Expiring soon ({days}d)",
-        "statusSafe": "Safe"
+        "statusSafe": "Safe",
+        "deleteSelected": "Delete Selected",
+        "selectMedicine": "Select {name}"
+    },
+    "ChildVaccinationTracker": {
+        "childTrackerTitle": "Child Vaccination Tracker",
+        "childTrackerSubtitle": "Enter a child profile to generate a personalized National Immunization Schedule timeline with completion tracking.",
+        "childReminderButton": "Download reminders",
+        "childNameLabel": "Child name",
+        "childNamePlaceholder": "Enter child name",
+        "childDobLabel": "Date of birth",
+        "childDefaultName": "Child",
+        "childDobPrompt": "Enter a date of birth to generate the personalized vaccination timeline.",
+        "childDobFutureError": "Date of birth cannot be in the future.",
+        "childDobInvalidError": "Enter a valid date of birth.",
+        "childProfileSummary": "Child profile",
+        "scheduleSourceLabel": "Schedule basis",
+        "childTimelineHeading": "Personalized timeline",
+        "whereApplicableBadge": "Where applicable",
+        "dueDateLabel": "Due date",
+        "officialTimingLabel": "Official timing",
+        "completedStatus": "Completed",
+        "dueStatus": "Due",
+        "overdueStatus": "Overdue",
+        "upcomingStatus": "Upcoming",
+        "markCompleteButton": "Mark completed",
+        "exportCSV": "Export CSV",
+        "exportPDF": "Export PDF",
+        "print": "Print",
+        "csvExportSuccess": "CSV exported successfully",
+        "pdfExportSuccess": "PDF exported successfully",
+        "noMedicinesToDisplay": "No medicines to display",
+        "generatedOn": "Generated On",
+        "deleteMedicine": "Delete medicine"
     },
     "Login": {
         "brandSubtitle": "Medicine safety platform",
@@ -476,6 +645,7 @@
             "description": "Supabase URL or anon key is missing. Add the environment variables before signing in."
         },
         "googleButton": "Continue with Google",
+        "githubButton": "Continue with Github",
         "emailSeparator": "or continue with email",
         "emailLabel": "Email address",
         "emailPlaceholder": "you@example.com",
@@ -485,10 +655,54 @@
         "signIn": "Sign In",
         "footerPrompt": "Need to go back?",
         "returnHome": "Return home",
+        "signUpPrompt": "Don't have an account?",
+        "signUpLink": "Sign up",
         "bottomText": "Protected access for SahiDawa community tools.",
         "errors": {
             "databaseNotConfigured": "Authentication is not configured for this environment.",
             "generic": "Unable to sign in. Please try again."
+        }
+    },
+    "SignUp": {
+        "brandSubtitle": "Medicine safety platform",
+        "heading": "Create your account",
+        "description": "Join SahiDawa to track medicine safety reports and verification results.",
+        "missingConfig": {
+            "title": "Authentication is not configured",
+            "description": "Supabase URL or anon key is missing. Add the environment variables before signing up."
+        },
+        "googleButton": "Continue with Google",
+        "githubButton": "Continue with Github",
+        "emailSeparator": "or continue with email",
+        "fullNameLabel": "Full name",
+        "fullNamePlaceholder": "Your full name",
+        "emailLabel": "Email address",
+        "emailPlaceholder": "you@example.com",
+        "passwordLabel": "Password",
+        "passwordPlaceholder": "Create a password",
+        "confirmPasswordLabel": "Confirm password",
+        "confirmPasswordPlaceholder": "Re-enter your password",
+        "showPassword": "Show password",
+        "hidePassword": "Hide password",
+        "showConfirmPassword": "Show confirm password",
+        "hideConfirmPassword": "Hide confirm password",
+        "signingUp": "Creating account...",
+        "signUp": "Sign Up",
+        "footerPrompt": "Already have an account?",
+        "signInLink": "Sign in",
+        "bottomText": "Protected access for SahiDawa community tools.",
+        "success": "Account created successfully! Redirecting...",
+        "successConfirmEmail": "Account created! Check your email to confirm your account before signing in.",
+        "errors": {
+            "databaseNotConfigured": "Authentication is not configured for this environment.",
+            "generic": "Unable to create account. Please try again.",
+            "fullNameRequired": "Full name is required.",
+            "emailRequired": "Email address is required.",
+            "emailInvalid": "Please enter a valid email address.",
+            "passwordRequired": "Password is required.",
+            "passwordWeak": "Password must be at least 8 characters and include uppercase, lowercase, and a number.",
+            "confirmPasswordRequired": "Please confirm your password.",
+            "passwordMismatch": "Passwords do not match."
         }
     },
     "AdminLayout": {
@@ -649,7 +863,77 @@
         "nav_compare": "Compare Medicines",
         "nav_vaccine": "Vaccine Hub",
         "nav_reports": "My Reports",
+        "nav_schedule": "Medicine Schedule",
         "nav_profile": "My Profile"
+    },
+    "howItWorks": {
+        "badge": "Safe Healthcare • AI Powered",
+        "heroTitle": "How <highlight>SahiDawa</highlight> Works",
+        "heroSubtitle": "Learn how SahiDawa helps users verify medicines, discover trusted pharmacies, receive official alerts, and stay protected from counterfeit drugs using AI-powered healthcare tools.",
+        "ctaButtons": {
+            "scan": "Start Scanning",
+            "map": "Explore Pharmacy Map"
+        },
+        "steps": {
+            "scan": {
+                "title": "Scan Medicine",
+                "description": "Point your device camera at the barcode or QR code on any medicine packaging."
+            },
+            "verify": {
+                "title": "Verify Instantly",
+                "description": "AI cross-references scanned details with CDSCO records to check authenticity."
+            },
+            "alerts": {
+                "title": "Check Alerts",
+                "description": "Get real-time safety alerts if the batch is recalled, banned, or substandard."
+            },
+            "pharmacies": {
+                "title": "Find Pharmacies",
+                "description": "Locate Jan Aushadhi stores and verified nearby pharmacies stocking real medicines."
+            },
+            "protect": {
+                "title": "Stay Protected",
+                "description": "Keep records of your scans, report fakes, and safeguard your family's health."
+            }
+        },
+        "features": {
+            "title": "Platform Features",
+            "subtitle": "Everything you need for safer healthcare decisions.",
+            "cards": {
+                "verifyMedicines": {
+                    "title": "Verify Medicines",
+                    "description": "Instantly verify medicine authenticity using barcode, batch number, or medicine details."
+                },
+                "scanOrSearch": {
+                    "title": "Scan or Search",
+                    "description": "Scan packaging or manually search medicines for trusted healthcare information."
+                },
+                "aiAssistant": {
+                    "title": "AI Health Assistant",
+                    "description": "Get AI-powered guidance for symptoms, side effects, precautions, and medicine usage."
+                },
+                "trustedPharmacies": {
+                    "title": "Trusted Pharmacies",
+                    "description": "Find verified pharmacies nearby with reliable medicine availability and ratings."
+                },
+                "cdscoAlerts": {
+                    "title": "CDSCO Alerts",
+                    "description": "Stay updated with official CDSCO medicine recalls, warnings, and health alerts."
+                },
+                "reportMedicines": {
+                    "title": "Report Suspicious Medicines",
+                    "description": "Help the community by reporting counterfeit or suspicious medicines instantly."
+                }
+            }
+        },
+        "ctaBanner": {
+            "title": "Safer Healthcare Starts Here",
+            "subtitle": "Verify medicines, access trusted healthcare information, and stay protected from counterfeit drugs with AI-powered assistance.",
+            "buttons": {
+                "scan": "Scan Medicine",
+                "alerts": "View Alerts"
+            }
+        }
     },
     "medicineSafety": {
         "guideTitle": "Usage & Safety Guide",
@@ -683,5 +967,222 @@
             "pregnancyHeading": "Pregnancy"
         },
         "disclaimer": "This information is educational and does not replace professional medical advice."
+    },
+    "Settings": {
+        "title": "Notification Preferences",
+        "subtitle": "Receive critical alerts via SMS and WhatsApp",
+        "phoneLabel": "Phone Number",
+        "phonePlaceholder": "Enter 10-digit mobile number",
+        "channelsLabel": "Preferred Channels",
+        "smsLabel": "SMS Alerts",
+        "smsDesc": "Get text messages for CDSCO recalls and counterfeit warnings",
+        "whatsappLabel": "WhatsApp Alerts",
+        "whatsappDesc": "Get rich messages and templates directly in WhatsApp",
+        "langLabel": "Alert Language",
+        "langDesc": "Preferred language for received text alerts",
+        "districtLabel": "District",
+        "districtDesc": "Receive alerts specific to this district",
+        "districtPlaceholder": "e.g. South West Delhi",
+        "saveButton": "Save Preferences",
+        "optOutButton": "Opt Out / Unsubscribe",
+        "saving": "Saving...",
+        "successMessage": "Preferences saved successfully!",
+        "optOutSuccess": "Successfully opted out of all notifications.",
+        "errorMessage": "Failed to update settings. Please try again.",
+        "phoneInvalid": "Please enter a valid 10-digit Indian phone number.",
+        "districtRequired": "Please specify a district to get localized warnings."
+    },
+    "Interactions": {
+        "title": "Medicine Interaction Checker",
+        "subtitle": "Check potential harmful interactions between multiple medications",
+        "searchLabel": "Search Medicine",
+        "searchPlaceholder": "Enter brand name or generic name...",
+        "addButton": "Add",
+        "checkButton": "Check Interactions",
+        "myMedicines": "My Medicines List",
+        "noMedicines": "No medicines added to your check list yet.",
+        "clearAll": "Clear All",
+        "resultsHeading": "Interaction Report",
+        "noInteractions": "All clear! No interactions detected between selected medicines.",
+        "severityCritical": "Critical Alert",
+        "severitySerious": "Serious Warning",
+        "severityModerate": "Moderate Caution",
+        "severityMinor": "Minor Precaution",
+        "clinicalRecommendation": "Clinical Recommendation:",
+        "mechanism": "Mechanism:",
+        "source": "Source:",
+        "errorMessage": "Failed to complete interaction check. Please try again.",
+        "offlineBadge": "Offline Result — Connect to internet for latest data"
+    },
+    "ScanHistory": {
+        "export_modal_title": "Export Scan History",
+        "export_range_label": "Select Date Range",
+        "export_status_label": "Filter by Status",
+        "range_7d": "Last 7 Days",
+        "range_30d": "Last 30 Days",
+        "range_all": "All Time",
+        "status_all": "All Statuses",
+        "status_verified": "Verified Only",
+        "status_suspicious": "Suspicious Only",
+        "status_fake": "Fake Only",
+        "export_button": "Generate CSV",
+        "cancel": "Cancel",
+        "title": "Scan History",
+        "export_csv_button": "Export to CSV",
+        "sync_cloud_button": "Sync to Cloud",
+        "clear_all_button": "Clear All History",
+        "clear_all_button_aria_label": "Clear all scan history",
+        "clear_confirm_message": "Are you sure you want to permanently delete all scan history? This action cannot be undone.",
+        "clear_cancel_button": "Cancel",
+        "clear_confirm_button": "Clear All",
+        "sync_success": "History synced with cloud.",
+        "sync_error": "Cloud sync unavailable right now.",
+        "stat_total": "Total",
+        "stat_verified": "Verified",
+        "stat_suspicious": "Suspicious",
+        "stat_fake": "Fake",
+        "empty_title": "No Scan History Yet",
+        "empty_description": "Your verified medicines will appear here.",
+        "search_placeholder": "Search medicine...",
+        "no_search_results": "No medicines match your search.",
+        "item_status_label": "Status: ",
+        "item_delete_button": "Delete",
+        "item_copy_success": "Medicine name copied!"
+    },
+    "MyReports": {
+        "header_title": "My Reports",
+        "header_subtitle": "Status of reports you have filed",
+        "page_title": "My Reports",
+        "page_description": "Track what happened to the counterfeit medicines you reported.",
+        "refresh_button_aria_label": "Refresh reports",
+        "loading_aria_label": "Loading your reports",
+        "status_pending_review": "Pending Review",
+        "status_verified_fake": "Verified Fake",
+        "status_false_alarm": "False Alarm",
+        "auth_error_title": "Sign in required",
+        "auth_error_expired": "Your session has expired. Please sign in again.",
+        "auth_error_description": "Please sign in to view the reports you have filed.",
+        "auth_error_action": "Go to Login",
+        "network_error_title": "Connection Error",
+        "network_error_action": "Try again",
+        "network_error_api_unreachable": "Cannot reach the API. Is the backend server running on port 4000?",
+        "empty_state_title": "You haven't filed any reports yet",
+        "empty_state_description": "Spotted a suspicious or counterfeit medicine? Reporting it helps protect your community.",
+        "empty_state_action": "File your first report",
+        "no_photo_label": "No photo",
+        "report_card_district_label": "District",
+        "report_card_submitted_label": "Submitted",
+        "report_card_batch_label": "Batch",
+        "load_more_button": "Load More"
+    },
+    "Map": {
+        "errors": {
+            "denied": "Location access denied. Please enable it in browser settings.",
+            "unavailable": "Location information unavailable.",
+            "timeout": "Location request timed out.",
+            "generic": "Unable to get your location."
+        }
+    },
+    "ABHA": {
+        "title": "ABHA Health Records",
+        "setupTitle": "ABHA Setup",
+        "recordsTitle": "ABHA Records",
+        "link": "Link ABHA",
+        "linked": "ABHA Linked",
+        "notLinked": "ABHA Not Linked",
+        "generateOtp": "Generate OTP",
+        "verifyOtp": "Verify OTP",
+        "enterAbha": "Enter ABHA Address",
+        "enterOtp": "Enter OTP",
+        "success": "ABHA successfully linked.",
+        "saveRecord": "Save to ABHA Record",
+        "noRecords": "No prescriptions found."
+    },
+    "Tracking": {
+        "success": "Medicine tracked successfully!",
+        "trackButton": "Track Expiry"
+    },
+    "SchemeEligibility": {
+        "validationAgeError": "Please enter a valid age.",
+        "validationStateError": "Please select a state.",
+        "validationIncomeError": "Please enter a valid annual income.",
+        "validationFamilySizeError": "Please enter a valid family size.",
+        "eligibilityCheckedSuccess": "Eligibility checked successfully!",
+        "eligibilityCheckFailed": "Failed to check eligibility. Please try again.",
+        "title": "Check Your <highlight>Scheme Eligibility</highlight>",
+        "description": "Find out which government health schemes you and your family qualify for in 3 simple steps.",
+        "stepDemographics": "Demographics",
+        "stepIncomeFamily": "Income & Family",
+        "stepIdentification": "Identification",
+        "ageLabel": "What is your age?",
+        "ageDescription": "Age helps verify senior citizen health coverages.",
+        "agePlaceholder": "e.g. 45",
+        "stateLabel": "Which state do you live in?",
+        "stateDescription": "Government health insurance programs vary by state.",
+        "incomeLabel": "What is your family's total annual income?",
+        "incomeDescription": "Your total combined household income in Rupees per year.",
+        "incomePlaceholder": "e.g. 120000",
+        "familySizeLabel": "How many members are in your family?",
+        "familySizeDescription": "Total family members living together in the household.",
+        "familySizePlaceholder": "e.g. 5",
+        "bplQuestion": "Do you have a BPL (Below Poverty Line) card?",
+        "abhaQuestion": "Do you have an ABHA (Ayushman Bharat Health Account) ID?",
+        "yesOption": "Yes, I do",
+        "noOption": "No, I do not",
+        "backButton": "Back",
+        "nextButton": "Next Step",
+        "findSchemesButton": "Find Schemes",
+        "checkingButton": "Checking...",
+        "resultsTitle": "Your Eligible Schemes",
+        "resultsDescription": "We found <countTag>{count} schemes</countTag> you qualify for.",
+        "eligibleBadge": "Eligible",
+        "benefitsCoverage": "Benefits / Coverage",
+        "howToApply": "How to Apply",
+        "visitOfficialPortal": "Visit Official Portal",
+        "noSchemesTitle": "No schemes found matching details.",
+        "noSchemesDescription": "Please consult a village official or check your local government kiosk.",
+        "printPdfButton": "Print / Save as PDF",
+        "checkAgainButton": "Check Again",
+        "printBrandTitle": "SahiDawa — Rural Health Bridge",
+        "printReportTitle": "Government Health Schemes Eligibility Report",
+        "dateGenerated": "Date Generated",
+        "website": "Website",
+        "age": "Age",
+        "years": "years",
+        "stateOfResidence": "State of Residence",
+        "annualFamilyIncome": "Annual Family Income",
+        "familySize": "Family Size",
+        "members": "members",
+        "bplRationCardHolder": "BPL Ration Card Holder",
+        "abhaHealthIdHolder": "ABHA Health ID Holder",
+        "yes": "Yes",
+        "no": "No"
+    },
+    "voiceVerify": {
+        "heading": "Voice Medicine Check",
+        "subtitle": "Speak the medicine name in your language",
+        "statusVerifying": "Verifying medicine...",
+        "statusRecording": "Recording... tap to stop",
+        "statusIdle": "Tap to speak the medicine name",
+        "supportedLanguages": "Supports: Hindi • Tamil • Telugu • Kannada • Bengali • Malayalam + more",
+        "errorMicDenied": "Microphone access denied. Please allow microphone access and try again.",
+        "errorNetwork": "Network error. Please check your connection and try again.",
+        "fallbackText": "No microphone?",
+        "fallbackLinkText": "Use text input instead",
+        "tryAgain": "Try again",
+        "checkAnother": "Check another medicine",
+        "statusVerified": "Verified",
+        "statusSuspicious": "Suspicious",
+        "statusNotFound": "Not Found",
+        "cdscoRegistered": "Registered",
+        "cdscoUnverified": "Unverified",
+        "scriptLabel": "Medicine ({script} script)",
+        "manufacturerLabel": "Manufacturer",
+        "categoryLabel": "Category",
+        "languageDetectedLabel": "Language Detected",
+        "youSaidLabel": "You said",
+        "warningsLabel": "Warnings",
+        "ariaStartRecording": "Start recording",
+        "ariaStopRecording": "Stop recording"
     }
 }

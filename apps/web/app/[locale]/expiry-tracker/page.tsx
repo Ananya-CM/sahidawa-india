@@ -1,60 +1,377 @@
 "use client";
-import React, { useState } from "react";
+import React, { useCallback, useState, useEffect, useRef } from "react";
 import { useTranslations } from "next-intl";
 import { PageHeader } from "../components/PageHeader";
+import { verifyMedicine } from "@/lib/api";
+import { toast } from "sonner";
+import { AlertTriangle, CheckCircle2, XCircle } from "lucide-react";
+import { ExpiryForm } from "./components/ExpiryForm";
+import { ExpiryModal } from "./components/ExpiryModal";
+import { ExpirySummary } from "./components/ExpirySummary";
+import { ExpiryTable } from "./components/ExpiryTable";
+import { formatDateInputValue, isValidDateString, parseLocalDate } from "./components/dateUtils";
+import type { FilterStatus, SortOption } from "./components/types";
 import {
-    Calendar,
-    Trash2,
-    Package,
-    XCircle,
-    AlertTriangle,
-    CheckCircle2,
-    Download,
-    Upload,
-    Search,
-} from "lucide-react";
-import { useMedicineTracker } from "@/hooks/useMedicineTracker";
-import { useExpiryIO } from "@/hooks/useExpiryIO";
-import { parseLocalDate, getDiffDays, getExpiryStatus } from "./components/expiryUtils";
-
-type FilterStatus = "all" | "expired" | "expiringSoon" | "safe";
-type SortOption = "expirySoonest" | "expiryLatest" | "alpha";
+    requestNotificationPermission as requestNotificationPermissionHelper,
+    checkAndTriggerLocalNotifications as checkAndTriggerNotificationsHelper,
+} from "@/lib/expiry-notifications";
+import { useMedicineTracker, Medicine } from "@/hooks/useMedicineTracker";
 
 export default function ExpiryTrackerPage() {
     const t = useTranslations("ExpiryTracker");
-
-    // ── Data / CRUD ───────────────────────────────────────────────────────────
-    const { medicines, isLoaded, addMedicine, deleteMedicine, replaceMedicines } =
-        useMedicineTracker();
-
-    // ── I/O ───────────────────────────────────────────────────────────────────
-    const { importError, fileInputRef, handleExport, handleImport } = useExpiryIO(
+    const {
         medicines,
-        replaceMedicines,
-        { importError: t("importError"), importDateError: t("importDateError") }
-    );
+        isLoaded,
+        addMedicine,
+        editMedicine,
+        deleteMedicine,
+        bulkDeleteMedicines,
+        importMedicines,
+    } = useMedicineTracker();
 
-    // ── Form state ────────────────────────────────────────────────────────────
+    // Form state
     const [name, setName] = useState("");
     const [expiryDate, setExpiryDate] = useState("");
     const [batchNumber, setBatchNumber] = useState("");
+    const [notes, setNotes] = useState("");
+    const [dateError, setDateError] = useState("");
+    const [isExpired, setIsExpired] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // ── List UI state ─────────────────────────────────────────────────────────
+    // List state
     const [searchQuery, setSearchQuery] = useState("");
+    const [editingId, setEditingId] = useState<string | null>(null);
     const [sortBy, setSortBy] = useState<SortOption>("expirySoonest");
     const [filterStatus, setFilterStatus] = useState<FilterStatus>("all");
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
-    // ── Form submit ───────────────────────────────────────────────────────────
+    // IO / System state
+    const [importError, setImportError] = useState<string | null>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [isScannerOpen, setIsScannerOpen] = useState(false);
+    const [isVerifying, setIsVerifying] = useState(false);
+    const [apiError, setApiError] = useState<string | null>(null);
+    const [notificationPermission, setNotificationPermission] = useState<string>("default");
+
+    useEffect(() => {
+        if (typeof window !== "undefined" && "Notification" in window) {
+            setNotificationPermission(Notification.permission);
+        }
+    }, []);
+
+    const requestNotificationPermission = async () => {
+        const permission = await requestNotificationPermissionHelper();
+        setNotificationPermission(permission);
+        if (permission === "granted") {
+            toast.success("Notifications enabled! You will be alerted before medicines expire.");
+            await checkAndTriggerNotificationsHelper(medicines);
+        } else if (permission === "denied") {
+            toast.error(
+                "Notification permission denied. Please enable alerts in your browser settings."
+            );
+        }
+        return permission;
+    };
+
+    const handleScannerClose = useCallback(() => {
+        setIsScannerOpen(false);
+        setApiError(null);
+    }, []);
+
+    const updateExpiryState = useCallback((dateInputValue: string) => {
+        setExpiryDate(dateInputValue);
+        setDateError("");
+
+        const selected = parseLocalDate(dateInputValue);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        selected.setHours(0, 0, 0, 0);
+        setIsExpired(selected < today);
+    }, []);
+
+    const handleBarcodeScan = useCallback(
+        async (scannedText: string) => {
+            setIsVerifying(true);
+            setApiError(null);
+            try {
+                const result = await verifyMedicine(scannedText);
+                if (result.verified) {
+                    const medicine = result.medicine;
+                    const scannedName = medicine.brand_name || medicine.generic_name;
+                    if (scannedName) setName(scannedName);
+                    setBatchNumber(medicine.batch_number || scannedText);
+
+                    const scannedExpiryDate = formatDateInputValue(medicine.expiry_date);
+                    if (scannedExpiryDate) updateExpiryState(scannedExpiryDate);
+
+                    const scannedDetails = [
+                        medicine.generic_name ? `Generic: ${medicine.generic_name}` : null,
+                        medicine.manufacturer ? `Manufacturer: ${medicine.manufacturer}` : null,
+                        medicine.cdsco_approval_status
+                            ? `CDSCO status: ${medicine.cdsco_approval_status}`
+                            : null,
+                    ]
+                        .filter(Boolean)
+                        .join("\n");
+
+                    if (scannedDetails) {
+                        setNotes((currentNotes) =>
+                            currentNotes.trim() ? currentNotes : scannedDetails
+                        );
+                    }
+
+                    toast.success("Medicine details auto-filled!");
+                    setIsScannerOpen(false);
+                } else {
+                    setBatchNumber(scannedText);
+                    toast.warning("Medicine not found in database. Batch number filled.");
+                    setIsScannerOpen(false);
+                }
+            } catch (error: unknown) {
+                console.error("Scan error:", error);
+                const message =
+                    error instanceof Error ? error.message : "Failed to fetch medicine details.";
+                setBatchNumber(scannedText);
+                setApiError(message);
+                toast.error("Failed to fetch medicine details. Batch number filled.");
+            } finally {
+                setIsVerifying(false);
+            }
+        },
+        [updateExpiryState]
+    );
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!name || !expiryDate) return;
-        await addMedicine({ name, expiryDate, batchNumber });
+        setIsSubmitting(true);
+
+        try {
+            if (!name || !expiryDate) {
+                setIsSubmitting(false);
+                return;
+            }
+
+            if (!isValidDateString(expiryDate)) {
+                setDateError("Invalid expiry date");
+                setIsSubmitting(false);
+                return;
+            }
+
+            const selected = parseLocalDate(expiryDate);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            selected.setHours(0, 0, 0, 0);
+
+            if (selected < today) {
+                setDateError("This medicine has already expired");
+                setIsSubmitting(false);
+                return;
+            }
+
+            setDateError("");
+
+            if (editingId) {
+                await editMedicine(editingId, { name, expiryDate, batchNumber, notes });
+                cancelEdit();
+            } else {
+                await addMedicine({ name, expiryDate, batchNumber, notes });
+                setName("");
+                setExpiryDate("");
+                setBatchNumber("");
+                setNotes("");
+            }
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleDelete = async (id: string) => {
+        await deleteMedicine(id);
+        if (editingId === id) cancelEdit();
+        setSelectedIds((prev) => {
+            if (!prev.has(id)) return prev;
+            const next = new Set(prev);
+            next.delete(id);
+            return next;
+        });
+    };
+
+    const startEdit = (med: Medicine) => {
+        setEditingId(med.id);
+        setName(med.name);
+        setExpiryDate(med.expiryDate);
+        setBatchNumber(med.batchNumber ?? "");
+        setNotes(med.notes ?? "");
+        setDateError("");
+        window.scrollTo({ top: 0, behavior: "smooth" });
+    };
+
+    const cancelEdit = () => {
+        setEditingId(null);
         setName("");
         setExpiryDate("");
         setBatchNumber("");
+        setNotes("");
+        setDateError("");
+        setIsExpired(false);
     };
 
-    // ── Derived list ──────────────────────────────────────────────────────────
+    const toggleSelect = (id: string) => {
+        setSelectedIds((prev) => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id);
+            else next.add(id);
+            return next;
+        });
+    };
+
+    const handleBulkDelete = async () => {
+        if (selectedIds.size === 0) return;
+        await bulkDeleteMedicines(Array.from(selectedIds));
+        setSelectedIds(new Set());
+    };
+
+    const getDiffDays = (dateStr: string) => {
+        const expiry = parseLocalDate(dateStr);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        return Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    };
+
+    const getExpiryStatus = (dateStr: string) => {
+        const diffDays = getDiffDays(dateStr);
+        if (diffDays < 0)
+            return {
+                icon: <XCircle size={14} />,
+                text: t("statusExpired"),
+                color: "text-red-600 bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-900/30",
+                key: "expired" as FilterStatus,
+            };
+        if (diffDays <= 30)
+            return {
+                icon: <AlertTriangle size={14} />,
+                text: t("statusExpiringSoon", { days: diffDays }),
+                color: "text-amber-600 bg-amber-50 border-amber-200 dark:bg-amber-900/20 dark:border-amber-900/30",
+                key: "expiringSoon" as FilterStatus,
+            };
+        return {
+            icon: <CheckCircle2 size={14} />,
+            text: t("statusSafe"),
+            color: "text-emerald-600 bg-emerald-50 border-emerald-200 dark:bg-emerald-900/20 dark:border-emerald-900/30",
+            key: "safe" as FilterStatus,
+        };
+    };
+
+    const handleExport = () => {
+        const blob = new Blob([JSON.stringify(medicines, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "sahidawa_expiry_backup.json";
+        a.click();
+        URL.revokeObjectURL(url);
+    };
+
+    const handleExportPDF = async () => {
+        if (processedMedicines.length === 0) return;
+
+        const [{ jsPDF }, { default: autoTable }] = await Promise.all([
+            import("jspdf"),
+            import("jspdf-autotable"),
+        ]);
+
+        const doc = new jsPDF();
+        doc.setFontSize(16);
+        doc.text("SahiDawa — Medicine Expiry Tracker", 14, 18);
+        doc.setFontSize(10);
+        doc.text(`${t("generatedOn")}: ${new Date().toLocaleDateString()}`, 14, 26);
+
+        const headers = ["Medicine Name", "Expiry Date", "Batch No.", "Status"];
+        const rows = processedMedicines.map((med) => [
+            med.name,
+            parseLocalDate(med.expiryDate).toLocaleDateString(),
+            med.batchNumber ?? "—",
+            getExpiryStatus(med.expiryDate).text,
+        ]);
+
+        try {
+            autoTable(doc, {
+                head: [headers],
+                body: rows,
+                startY: 32,
+                styles: { fontSize: 9, cellPadding: 4 },
+                headStyles: { fillColor: [16, 185, 129], textColor: 255, fontStyle: "bold" },
+                alternateRowStyles: { fillColor: [245, 250, 248] },
+                columnStyles: { 0: { cellWidth: 70 } },
+            });
+        } catch {
+            let y = 36;
+            const colWidths = [70, 40, 35, 40];
+            const colX = [14, 84, 124, 159];
+
+            doc.setFontSize(9);
+            doc.setFont("helvetica", "bold");
+            headers.forEach((h, i) => doc.text(h, colX[i], y));
+            y += 2;
+            doc.line(14, y, 196, y);
+            y += 5;
+
+            doc.setFont("helvetica", "normal");
+            rows.forEach((row) => {
+                if (y > 275) {
+                    doc.addPage();
+                    y = 20;
+                }
+                row.forEach((cell, i) => {
+                    const text = doc.splitTextToSize(String(cell), colWidths[i] - 2);
+                    doc.text(text, colX[i], y);
+                });
+                y += 8;
+            });
+        }
+
+        doc.save("sahidawa_expiry_tracker.pdf");
+        toast.success(t("pdfExportSuccess") || "PDF Exported Successfully!");
+    };
+
+    const handlePrint = () => {
+        window.print();
+    };
+
+    const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setImportError(null);
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = async (event) => {
+            try {
+                const parsed = JSON.parse(event.target?.result as string);
+                if (!Array.isArray(parsed)) throw new Error("Not an array");
+                const valid = parsed.filter(
+                    (item) =>
+                        typeof item.id === "string" &&
+                        typeof item.name === "string" &&
+                        typeof item.expiryDate === "string" &&
+                        isValidDateString(item.expiryDate)
+                );
+                if (valid.length !== parsed.length) {
+                    setImportError(t("importDateError"));
+                    return;
+                }
+
+                const existingIds = new Set(medicines.map((m) => m.id));
+                const newItems = valid.filter((m) => !existingIds.has(m.id));
+                if (newItems.length === 0) return;
+
+                await importMedicines(newItems);
+            } catch {
+                setImportError(t("importError"));
+            }
+        };
+        reader.readAsText(file);
+        e.target.value = "";
+    };
+
     const processedMedicines = medicines
         .filter((med) => {
             if (filterStatus === "all") return true;
@@ -76,228 +393,80 @@ export default function ExpiryTrackerPage() {
         { key: "safe", label: t("filterSafe") },
     ];
 
-    // ── Status → icon/color (render layer, not the pure util) ─────────────────
-    const statusMeta: Record<
-        "expired" | "expiringSoon" | "safe",
-        { icon: React.ReactNode; color: string; text: string }
-    > = {
-        expired: {
-            icon: <XCircle size={14} />,
-            color: "text-red-600 bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-900/30",
-            text: t("statusExpired"),
-        },
-        expiringSoon: {
-            icon: <AlertTriangle size={14} />,
-            color: "text-amber-600 bg-amber-50 border-amber-200 dark:bg-amber-900/20 dark:border-amber-900/30",
-            // Overridden in render with interpolated days value
-            text: "",
-        },
-        safe: {
-            icon: <CheckCircle2 size={14} />,
-            color: "text-emerald-600 bg-emerald-50 border-emerald-200 dark:bg-emerald-900/20 dark:border-emerald-900/30",
-            text: t("statusSafe"),
-        },
-    };
-
-    // ─────────────────────────────────────────────────────────────────────────
     return (
         <div className="min-h-screen bg-(--color-surface-page) text-(--color-text-primary) transition-colors duration-300">
             <PageHeader title={t("title")} subtitle={t("subtitle")} backHref="/" variant="light" />
 
             <main className="mx-auto max-w-6xl p-6 pt-32 md:pt-40">
                 <div className="mt-4 grid grid-cols-1 gap-8 md:grid-cols-3">
-                    {/* ── Sidebar ── */}
-                    <div className="h-fit rounded-2xl border border-(--color-border-muted) bg-(--color-surface-muted) p-6 shadow-sm md:sticky md:top-32 md:col-span-1">
-                        <h2 className="mb-4 text-lg font-bold tracking-tight uppercase">
-                            {t("addMedicine")}
-                        </h2>
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                            <div>
-                                <label className="mb-1 block text-xs font-bold tracking-wider uppercase opacity-60">
-                                    {t("name")}
-                                </label>
-                                <input
-                                    type="text"
-                                    required
-                                    value={name}
-                                    onChange={(e) => setName(e.target.value)}
-                                    className="w-full rounded-xl border border-(--color-border-muted) bg-(--color-surface-page) p-3 text-(--color-text-primary) transition outline-none focus:ring-2 focus:ring-emerald-500"
-                                    placeholder={t("namePlaceholder")}
-                                />
-                            </div>
-                            <div>
-                                <label className="mb-1 block text-xs font-bold tracking-wider uppercase opacity-60">
-                                    {t("expiryDate")}
-                                </label>
-                                <input
-                                    type="date"
-                                    required
-                                    value={expiryDate}
-                                    onChange={(e) => setExpiryDate(e.target.value)}
-                                    className="w-full rounded-xl border border-(--color-border-muted) bg-(--color-surface-page) p-3 text-(--color-text-primary) [color-scheme:light] transition outline-none focus:ring-2 focus:ring-emerald-500 dark:[color-scheme:dark]"
-                                />
-                            </div>
-                            <div>
-                                <label className="mb-1 block text-xs font-bold tracking-wider uppercase opacity-60">
-                                    {t("batchNumber")}
-                                </label>
-                                <input
-                                    type="text"
-                                    value={batchNumber}
-                                    onChange={(e) => setBatchNumber(e.target.value)}
-                                    className="w-full rounded-xl border border-(--color-border-muted) bg-(--color-surface-page) p-3 text-(--color-text-primary) transition outline-none focus:ring-2 focus:ring-emerald-500"
-                                    placeholder={t("batchPlaceholder")}
-                                />
-                            </div>
-                            <button
-                                type="submit"
-                                className="w-full rounded-xl bg-emerald-600 py-3 font-bold text-white shadow-lg shadow-emerald-900/20 transition-all hover:bg-emerald-700 active:scale-95"
-                            >
-                                {t("addToTracker")}
-                            </button>
-                        </form>
+                    <ExpiryForm
+                        t={t}
+                        editingId={editingId}
+                        name={name}
+                        expiryDate={expiryDate}
+                        batchNumber={batchNumber}
+                        notes={notes}
+                        dateError={dateError}
+                        isExpired={isExpired}
+                        isSubmitting={isSubmitting}
+                        importError={importError}
+                        medicinesCount={medicines.length}
+                        fileInputRef={fileInputRef}
+                        notificationPermission={notificationPermission}
+                        onNameChange={setName}
+                        onExpiryDateChange={setExpiryDate}
+                        onBatchNumberChange={setBatchNumber}
+                        onNotesChange={setNotes}
+                        onExpiredChange={setIsExpired}
+                        onDateErrorChange={setDateError}
+                        onSubmit={handleSubmit}
+                        onCancelEdit={cancelEdit}
+                        onOpenScanner={() => setIsScannerOpen(true)}
+                        onExportPDF={handleExportPDF}
+                        onPrint={handlePrint}
+                        onExport={handleExport}
+                        onImport={handleImport}
+                        onRequestNotificationPermission={requestNotificationPermission}
+                    />
 
-                        {/* Import / Export */}
-                        <div className="mt-6 flex flex-col gap-2">
-                            <button
-                                onClick={handleExport}
-                                disabled={medicines.length === 0}
-                                className="flex items-center justify-center gap-2 rounded-xl border border-(--color-border-muted) py-2.5 text-sm font-semibold transition hover:bg-(--color-surface-page) disabled:opacity-40"
-                            >
-                                <Download size={15} /> {t("exportBackup")}
-                            </button>
-                            <button
-                                onClick={() => fileInputRef.current?.click()}
-                                className="flex items-center justify-center gap-2 rounded-xl border border-(--color-border-muted) py-2.5 text-sm font-semibold transition hover:bg-(--color-surface-page)"
-                            >
-                                <Upload size={15} /> {t("importBackup")}
-                            </button>
-                            <input
-                                ref={fileInputRef}
-                                type="file"
-                                accept=".json"
-                                onChange={handleImport}
-                                className="hidden"
-                            />
-                            {importError && <p className="text-xs text-red-500">{importError}</p>}
-                        </div>
-                    </div>
-
-                    {/* ── Main list ── */}
                     <div className="space-y-4 md:col-span-2">
-                        <div className="flex items-center justify-between px-2">
-                            <h2 className="text-xl font-bold">{t("trackedMedicines")}</h2>
-                            <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-500">
-                                {t("total")}: {medicines.length}
-                            </span>
-                        </div>
-
-                        {/* Search + Sort */}
-                        <div className="flex flex-col gap-2 sm:flex-row">
-                            <div className="relative flex-1">
-                                <Search
-                                    size={15}
-                                    className="absolute top-1/2 left-3 -translate-y-1/2 opacity-40"
-                                />
-                                <input
-                                    type="text"
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                    placeholder={t("searchPlaceholder")}
-                                    className="w-full rounded-xl border border-(--color-border-muted) bg-(--color-surface-muted) py-2.5 pr-3 pl-9 text-sm outline-none focus:ring-2 focus:ring-emerald-500"
-                                />
-                            </div>
-                            <select
-                                value={sortBy}
-                                onChange={(e) => setSortBy(e.target.value as SortOption)}
-                                className="rounded-xl border border-(--color-border-muted) bg-(--color-surface-muted) px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-emerald-500"
-                            >
-                                <option value="expirySoonest">{t("sortExpirySoonest")}</option>
-                                <option value="expiryLatest">{t("sortExpiryLatest")}</option>
-                                <option value="alpha">{t("sortAlpha")}</option>
-                            </select>
-                        </div>
-
-                        {/* Filter chips */}
-                        <div className="flex flex-wrap gap-2">
-                            {filterOptions.map((f) => (
-                                <button
-                                    key={f.key}
-                                    onClick={() => setFilterStatus(f.key)}
-                                    className={`rounded-full border px-4 py-1.5 text-xs font-bold transition-all ${
-                                        filterStatus === f.key
-                                            ? "border-emerald-600 bg-emerald-600 text-white"
-                                            : "border-(--color-border-muted) text-(--color-text-secondary) hover:border-emerald-500"
-                                    }`}
-                                >
-                                    {f.label}
-                                </button>
-                            ))}
-                        </div>
-
-                        {/* Medicine list */}
-                        {!isLoaded ? (
-                            <div className="py-20 text-center opacity-50">
-                                <p className="animate-pulse">{t("loading")}</p>
-                            </div>
-                        ) : processedMedicines.length === 0 ? (
-                            <div className="rounded-3xl border-2 border-dashed border-(--color-border-muted) bg-(--color-surface-muted) py-20 text-center opacity-50">
-                                <Package size={48} className="mx-auto mb-2 opacity-50" />
-                                <p>{t("noMedicines")}</p>
-                            </div>
-                        ) : (
-                            <div className="grid grid-cols-1 gap-4">
-                                {processedMedicines.map((med) => {
-                                    const { key, diffDays } = getExpiryStatus(med.expiryDate);
-                                    const meta = statusMeta[key];
-                                    const statusText =
-                                        key === "expiringSoon"
-                                            ? t("statusExpiringSoon", { days: diffDays })
-                                            : meta.text;
-                                    return (
-                                        <div
-                                            key={med.id}
-                                            className="flex items-center justify-between rounded-2xl border border-(--color-border-muted) bg-(--color-surface-muted) p-5 shadow-sm transition-all hover:border-emerald-500/50"
-                                        >
-                                            <div className="space-y-1">
-                                                <h3 className="text-lg leading-tight font-bold">
-                                                    {med.name}
-                                                </h3>
-                                                <div className="flex items-center gap-3 text-sm opacity-70">
-                                                    <span className="flex items-center gap-1">
-                                                        <Calendar size={14} />{" "}
-                                                        {parseLocalDate(
-                                                            med.expiryDate
-                                                        ).toLocaleDateString()}
-                                                    </span>
-                                                    {med.batchNumber && (
-                                                        <span className="flex items-center gap-1">
-                                                            <Package size={14} /> {med.batchNumber}
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center gap-4">
-                                                <span
-                                                    className={`flex items-center gap-1.5 rounded-full border px-4 py-1.5 text-[11px] font-bold ${meta.color}`}
-                                                >
-                                                    {meta.icon} {statusText}
-                                                </span>
-                                                <button
-                                                    onClick={() => deleteMedicine(med.id)}
-                                                    className="rounded-full p-2 transition-colors hover:bg-red-500/10"
-                                                >
-                                                    <Trash2 size={18} className="text-red-500" />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        )}
+                        <ExpirySummary
+                            t={t}
+                            totalMedicines={medicines.length}
+                            selectedCount={selectedIds.size}
+                            searchQuery={searchQuery}
+                            sortBy={sortBy}
+                            filterStatus={filterStatus}
+                            filterOptions={filterOptions}
+                            onBulkDelete={handleBulkDelete}
+                            onSearchChange={setSearchQuery}
+                            onSortChange={setSortBy}
+                            onFilterChange={setFilterStatus}
+                        />
+                        <ExpiryTable
+                            t={t}
+                            medicines={processedMedicines}
+                            isLoaded={isLoaded}
+                            selectedIds={selectedIds}
+                            getExpiryStatus={getExpiryStatus}
+                            onToggleSelect={toggleSelect}
+                            onStartEdit={startEdit}
+                            onDelete={handleDelete}
+                        />
                     </div>
                 </div>
             </main>
+
+            <ExpiryModal
+                isOpen={isScannerOpen}
+                isVerifying={isVerifying}
+                apiError={apiError}
+                onClose={handleScannerClose}
+                onScan={handleBarcodeScan}
+                onRetry={() => {
+                    setApiError(null);
+                }}
+            />
         </div>
     );
 }

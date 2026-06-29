@@ -54,12 +54,14 @@ jobs:
             # ─────────────────────────────────────────────────────────────────
             - name: "📦 Checkout Repository"
               uses: actions/checkout@v4
+              with:
+                  ref: ${{ github.event.pull_request.base.ref }}
 
             # ─────────────────────────────────────────────────────────────────
             # Step 2: Set up Python 3.12
             # ─────────────────────────────────────────────────────────────────
             - name: "🐍 Setup Python 3.12"
-              uses: actions/setup-python@v5
+              uses: actions/setup-python@v6
               with:
                   python-version: "3.12"
 
@@ -78,7 +80,7 @@ jobs:
             # ─────────────────────────────────────────────────────────────────
             - name: "🔍 Extract PR Metadata"
               id: pr_meta
-              uses: actions/github-script@v7
+              uses: actions/github-script@v9
               with:
                   github-token: ${{ secrets.GITHUB_TOKEN }}
                   script: |
@@ -158,7 +160,7 @@ jobs:
             # ─────────────────────────────────────────────────────────────────
             - name: "💬 Post Celebratory PR Comment"
               if: steps.shoutout.outputs.shoutout_status == 'published'
-              uses: actions/github-script@v7
+              uses: actions/github-script@v9
               with:
                   github-token: ${{ secrets.GITHUB_TOKEN }}
                   script: |

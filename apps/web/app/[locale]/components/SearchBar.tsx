@@ -1,10 +1,18 @@
 "use client";
-import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Search } from "lucide-react";
+import React, {
+    useCallback,
+    useDeferredValue,
+    useEffect,
+    useRef,
+    useState,
+    useTransition,
+} from "react";
+import { Search, X } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useTranslations } from "next-intl";
 import { fuzzyMatchBrand } from "@/lib/api";
-import SearchSuggestions from "@/components/SearchSuggestions";
+import SearchSuggestions, { HistoryItem } from "@/components/SearchSuggestions";
+import { escapePostgrest } from "@/lib/supabase/utils";
 
 /** Maximum number of suggestions shown at once */
 const MAX_SUGGESTIONS = 8;
@@ -33,17 +41,144 @@ export default function SearchBar({ dark = false, onSearchChange }: SearchBarPro
     const [error, setError] = useState<string | null>(null);
     const [noResults, setNoResults] = useState(false);
     const [query, setQuery] = useState<string>("");
+    const deferredQuery = useDeferredValue(query);
+    const trimmedQuery = query.trim();
+    const deferredTrimmedQuery = deferredQuery.trim();
     const [suggestions, setSuggestions] = useState<string[]>([]);
     const [activeIndex, setActiveIndex] = useState<number>(-1);
 
     const [isOpen, setIsOpen] = useState<boolean>(false);
     const [isLoading, setIsLoading] = useState<boolean>(false);
+    const [, startTransition] = useTransition();
+
+    // Search History State
+    const [history, setHistory] = useState<HistoryItem[]>([]);
+
+    useEffect(() => {
+        try {
+            const stored = localStorage.getItem("sahidawa_search_history");
+            if (stored) {
+                setHistory(JSON.parse(stored));
+            }
+        } catch (e) {
+            console.error("Failed to access or parse search history:", e);
+        }
+    }, []);
+
+    const persistTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const persistHistory = useCallback((newHistory: HistoryItem[]) => {
+        if (persistTimeoutRef.current) {
+            clearTimeout(persistTimeoutRef.current);
+        }
+        persistTimeoutRef.current = setTimeout(() => {
+            try {
+                localStorage.setItem("sahidawa_search_history", JSON.stringify(newHistory));
+            } catch (e) {
+                console.warn("Failed to persist search history:", e);
+            }
+        }, 300);
+    }, []);
+
+    const addToHistory = useCallback(
+        (searchQuery: string) => {
+            const trimmed = searchQuery.trim();
+            if (!trimmed) return;
+
+            setHistory((prev) => {
+                const filtered = prev.filter(
+                    (item) => item.query.toLowerCase() !== trimmed.toLowerCase()
+                );
+                const existingItem = prev.find(
+                    (item) => item.query.toLowerCase() === trimmed.toLowerCase()
+                );
+                const newItem: HistoryItem = {
+                    query: existingItem ? existingItem.query : trimmed,
+                    pinned: existingItem ? existingItem.pinned : false,
+                    timestamp: Date.now(),
+                };
+                const sorted = [newItem, ...filtered];
+                // Sort: pinned first, then by timestamp descending
+                const sortedFinal = [...sorted]
+                    .sort((a, b) => {
+                        if (a.pinned && !b.pinned) return -1;
+                        if (!a.pinned && b.pinned) return 1;
+                        return b.timestamp - a.timestamp;
+                    })
+                    .slice(0, 20); // Limit to 20 items
+
+                persistHistory(sortedFinal);
+                return sortedFinal;
+            });
+        },
+        [persistHistory]
+    );
+
+    const togglePin = useCallback(
+        (searchQuery: string) => {
+            setHistory((prev) => {
+                const updated = prev.map((item) => {
+                    if (item.query.toLowerCase() === searchQuery.toLowerCase()) {
+                        return { ...item, pinned: !item.pinned };
+                    }
+                    return item;
+                });
+                const sortedFinal = [...updated].sort((a, b) => {
+                    if (a.pinned && !b.pinned) return -1;
+                    if (!a.pinned && b.pinned) return 1;
+                    return b.timestamp - a.timestamp;
+                });
+
+                persistHistory(sortedFinal);
+                return sortedFinal;
+            });
+        },
+        [persistHistory]
+    );
+
+    const clearHistory = useCallback(() => {
+        setHistory([]);
+        localStorage.removeItem("sahidawa_search_history");
+    }, []);
+
+    // ── Delete a single history entry ──────────────────────────────────────────
+    const deleteFromHistory = useCallback(
+        (searchQuery: string) => {
+            setHistory((prev) => {
+                const updated = prev.filter(
+                    (item) => item.query.toLowerCase() !== searchQuery.toLowerCase()
+                );
+                persistHistory(updated);
+                return updated;
+            });
+        },
+        [persistHistory]
+    );
 
     // ── Refs ───────────────────────────────────────────────────────────────────
     const containerRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
     const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const abortControllerRef = useRef<AbortController | null>(null);
+
+    // ── Global keyboard shortcut (/) ──────────────────────────────────────────
+    useEffect(() => {
+        const handleGlobalKeyDown = (e: KeyboardEvent) => {
+            if (
+                e.key === "/" &&
+                document.activeElement?.tagName !== "INPUT" &&
+                document.activeElement?.tagName !== "TEXTAREA"
+            ) {
+                e.preventDefault();
+                inputRef.current?.focus();
+            }
+        };
+
+        window.addEventListener("keydown", handleGlobalKeyDown);
+        return () => {
+            window.removeEventListener("keydown", handleGlobalKeyDown);
+        };
+    }, []);
 
     // ── Close on click-outside ─────────────────────────────────────────────────
     useEffect(() => {
@@ -58,7 +193,6 @@ export default function SearchBar({ dark = false, onSearchChange }: SearchBarPro
     }, []);
 
     // ── Fetch suggestions from Supabase (debounced) ────────────────────────────
-
     const fetchSuggestions = useCallback(async (trimmed: string) => {
         setError(null);
         setNoResults(false);
@@ -92,18 +226,37 @@ export default function SearchBar({ dark = false, onSearchChange }: SearchBarPro
                 const response = await supabase
                     .from("medicines")
                     .select("brand_name, batch_number")
-                    .or(`brand_name.ilike.%${trimmed}%,batch_number.ilike.%${trimmed}%`)
+                    .or(
+                        `brand_name.ilike."%${escapePostgrest(trimmed)}%",batch_number.ilike."%${escapePostgrest(trimmed)}%"`
+                    )
                     .abortSignal(controller.signal)
                     .limit(MAX_SUGGESTIONS);
 
                 if (response.error) {
-                    // If the table doesn't exist, Supabase returns a 42P01 error code or a specific message string
                     if (
                         response.error.message?.includes("Could not find the table") ||
                         response.error.code === "42P01"
                     ) {
                         console.warn(
                             "[SearchBar] Table missing. Dropping into local data fallback matrix."
+                        );
+                        useFallback = true;
+                    } else if (
+                        response.error.message?.includes("AbortError") ||
+                        response.error.message?.includes("aborted")
+                    ) {
+                        // Request was cancelled by a newer keystroke — safe to ignore
+                        return;
+                    }
+                    // Network errors — silently fall through to fuzzy matcher
+                    if (
+                        response.error.message?.includes("Failed to fetch") ||
+                        response.error.message?.includes("NetworkError") ||
+                        response.error.message?.includes("fetch")
+                    ) {
+                        console.warn(
+                            "[SearchBar] Network error, trying fuzzy fallback:",
+                            response.error.message
                         );
                         useFallback = true;
                     } else {
@@ -116,7 +269,7 @@ export default function SearchBar({ dark = false, onSearchChange }: SearchBarPro
                     data = response.data;
                 }
             } catch (dbErr: any) {
-                // Catch hard network failures or uncaught errors
+                if (dbErr?.name === "AbortError" || dbErr?.message?.includes("aborted")) return;
                 if (dbErr?.message?.includes("Could not find the table")) {
                     useFallback = true;
                 } else {
@@ -147,7 +300,7 @@ export default function SearchBar({ dark = false, onSearchChange }: SearchBarPro
             else if (useFallback) {
                 const mockMedicinesPool = [
                     { brand_name: "Paracetamol", batch_number: "BATCH-PR750" },
-                    { brand_name: "Peracetamol (Fuzzy Match)", batch_number: "BATCH-PR750" }, // Added typo insurance
+                    { brand_name: "Peracetamol (Fuzzy Match)", batch_number: "BATCH-PR750" },
                     { brand_name: "Crocin Advance", batch_number: "BATCH-CR100" },
                     { brand_name: "Amoxicillin", batch_number: "BATCH-AM250" },
                     { brand_name: "Calpol 650", batch_number: "BATCH-CP650" },
@@ -204,15 +357,12 @@ export default function SearchBar({ dark = false, onSearchChange }: SearchBarPro
     }, []);
 
     useEffect(() => {
-        const trimmed = query.trim();
-
         if (debounceTimer.current) {
             clearTimeout(debounceTimer.current);
         }
 
-        if (!trimmed) {
+        if (!trimmedQuery) {
             setSuggestions([]);
-            setIsOpen(false);
             setIsLoading(false);
             setNoResults(false);
             setError(null);
@@ -221,7 +371,7 @@ export default function SearchBar({ dark = false, onSearchChange }: SearchBarPro
         }
 
         debounceTimer.current = setTimeout(() => {
-            fetchSuggestions(trimmed);
+            fetchSuggestions(deferredTrimmedQuery);
         }, DEBOUNCE_MS);
 
         return () => {
@@ -230,21 +380,18 @@ export default function SearchBar({ dark = false, onSearchChange }: SearchBarPro
             }
             abortControllerRef.current?.abort();
         };
-    }, [query, fetchSuggestions, onSearchChange]);
+    }, [trimmedQuery, deferredTrimmedQuery, fetchSuggestions, onSearchChange]);
 
-    // // ── Debounce query changes ─────────────────────────────────────────────────
-    //  ----------------
     // ── Select a suggestion ────────────────────────────────────────────────────
-    // // ── Perform search (Enter without active suggestion, or Search button) ─────
     const selectSuggestion = useCallback(
         (value: string) => {
             setQuery(value);
             setIsOpen(false);
             setActiveIndex(-1);
-            if (onSearchChange) onSearchChange(value); // Sync query to safety panel
-
+            addToHistory(value);
+            if (onSearchChange) onSearchChange(value);
         },
-        [onSearchChange]
+        [onSearchChange, addToHistory]
     );
 
     // ── Perform search (Enter without active suggestion, or Search button) ─────
@@ -254,27 +401,35 @@ export default function SearchBar({ dark = false, onSearchChange }: SearchBarPro
             if (!trimmed) return;
             setIsOpen(false);
             setActiveIndex(-1);
-            if (onSearchChange) onSearchChange(trimmed); // Sync query to safety panel
-
+            addToHistory(trimmed);
+            if (onSearchChange) onSearchChange(trimmed);
         },
-        [onSearchChange]
+        [onSearchChange, addToHistory]
     );
+
+    const isHistoryMode = deferredTrimmedQuery === "";
+    const listLength = isHistoryMode ? history.length : suggestions.length;
+
     // ── Keyboard navigation ────────────────────────────────────────────────────
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (!isOpen && e.key !== "Enter") return;
         switch (e.key) {
             case "ArrowDown":
                 e.preventDefault();
-                setActiveIndex((prev) => (prev < suggestions.length - 1 ? prev + 1 : 0));
+                setActiveIndex((prev) => (prev < listLength - 1 ? prev + 1 : 0));
                 break;
             case "ArrowUp":
                 e.preventDefault();
-                setActiveIndex((prev) => (prev > 0 ? prev - 1 : suggestions.length - 1));
+                setActiveIndex((prev) => (prev > 0 ? prev - 1 : listLength - 1));
                 break;
             case "Enter":
                 e.preventDefault();
-                if (activeIndex >= 0 && activeIndex < suggestions.length) {
-                    selectSuggestion(suggestions[activeIndex]);
+                if (activeIndex >= 0 && activeIndex < listLength) {
+                    if (isHistoryMode) {
+                        selectSuggestion(history[activeIndex].query);
+                    } else {
+                        selectSuggestion(suggestions[activeIndex]);
+                    }
                 } else {
                     performSearch(query);
                 }
@@ -293,7 +448,7 @@ export default function SearchBar({ dark = false, onSearchChange }: SearchBarPro
     // ── Input change ───────────────────────────────────────────────────────────
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setQuery(e.target.value);
-        setActiveIndex(-1);
+        startTransition(() => setActiveIndex(-1));
     };
 
     // ── Render ─────────────────────────────────────────────────────────────────
@@ -337,21 +492,52 @@ export default function SearchBar({ dark = false, onSearchChange }: SearchBarPro
                         value={query}
                         onChange={handleInputChange}
                         onKeyDown={handleKeyDown}
-                        onFocus={() => {
-                            setIsOpen(true);
-                        }}
+                        onFocus={() => setIsOpen(true)}
                         placeholder={tHome("search_placeholder")}
                         className={`w-full border-none bg-transparent py-1 text-sm font-medium outline-none sm:text-base ${
                             dark
                                 ? "text-slate-100 placeholder:text-slate-500"
                                 : "text-slate-800 placeholder:text-slate-400 dark:text-slate-100 dark:placeholder:text-slate-500"
                         }`}
-                        aria-label="Search medicine or batch"
+                        aria-label={tHome("search_input_aria")}
                     />
+
+                    {/* ── Clear (X) button — only when input has text ── */}
+                    {query.length > 0 && (
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setQuery("");
+                                setActiveIndex(-1);
+                                setSuggestions([]);
+                                setIsOpen(false);
+                                onSearchChange?.("");
+                                inputRef.current?.focus();
+                            }}
+                            aria-label={tHome("clear_search")}
+                            className={`shrink-0 rounded-full p-1 transition-colors duration-150 ${
+                                dark
+                                    ? "text-slate-500 hover:bg-slate-700 hover:text-slate-300"
+                                    : "text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:text-slate-500 dark:hover:bg-slate-800 dark:hover:text-slate-300"
+                            }`}
+                        >
+                            <X size={16} aria-hidden="true" />
+                        </button>
+                    )}
+
+                    {/* / shortcut hint — only when input is empty and dropdown closed */}
+                    {!isOpen && !query && (
+                        <div className="hidden items-center pr-2 sm:flex">
+                            <kbd className="pointer-events-none inline-flex h-5 items-center rounded border border-slate-200 bg-slate-50 px-1.5 font-sans text-xs font-medium text-slate-400 select-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-500">
+                                /
+                            </kbd>
+                        </div>
+                    )}
+
                     <button
                         onClick={() => performSearch(query)}
                         className="flex shrink-0 cursor-pointer items-center justify-center gap-2 rounded-xl bg-linear-to-r from-emerald-500 to-teal-500 p-2.5 text-sm font-bold text-white shadow-md shadow-emerald-500/25 transition-all duration-300 ease-out hover:-translate-y-0.5 hover:shadow-xl hover:shadow-emerald-500/30 active:scale-95 sm:px-5 sm:py-2.5"
-                        aria-label="Submit search"
+                        aria-label={tHome("submit_search")}
                     >
                         <Search size={16} aria-hidden="true" />
                         <span className="hidden sm:inline">{tHome("search_button")}</span>
@@ -369,6 +555,12 @@ export default function SearchBar({ dark = false, onSearchChange }: SearchBarPro
                 error={error}
                 noResults={noResults}
                 onRetry={() => fetchSuggestions(query.trim())}
+                isHistory={isHistoryMode}
+                historyItems={history}
+                onPinToggle={togglePin}
+                onClearHistory={clearHistory}
+                onDeleteItem={deleteFromHistory}
+                query={deferredTrimmedQuery}
             />
         </div>
     );

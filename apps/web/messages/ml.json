@@ -27,6 +27,9 @@
         "alerts_empty_title": "എല്ലാം ശരിയാണ്!",
         "alerts_empty_description": "ഇപ്പോൾ സജീവ നിയന്ത്രണ അലേർട്ടുകൾ ഒന്നുമില്ല. സുരക്ഷിതമായിരിക്കുക, നിങ്ങളുടെ മരുന്നുകൾ പരിശോധിക്കുക.",
         "view_full_alert_log": "പൂർണ്ണ അലേർട്ട് ലോഗ് കാണുക",
+        "vaccine_title": "വാക്സിൻ ഹബ് & പ്രതിരോധ കുത്തിവയ്പ്പ് ട്രാക്കർ",
+        "vaccine_subtitle": "മെച്ചപ്പെട്ട പൊതുജനാരോഗ്യ അവബോധത്തിനായി വാക്സിൻ ഷെഡ്യൂളുകൾ, സുരക്ഷാ വിവരങ്ങൾ, കുത്തിവയ്പ്പിന് ശേഷമുള്ള പരിചരണ മാർഗ്ഗനിർദ്ദേശങ്ങൾ അറിയുക.",
+        "vaccine_open": "വാക്സിൻ ഹബ് തുറക്കുക",
         "heroTitle": {
             "prefix": "നിങ്ങളുടെ ആരോഗ്യം, ",
             "highlight": "പരിശോധിക്കപ്പെട്ടതും സംരക്ഷിക്കപ്പെട്ടതും."
@@ -305,7 +308,8 @@
         "placeholder": "Ask me about a medicine...",
         "status": "Online",
         "title": "SahiDawa AI",
-        "welcome": "Hi! I am the SahiDawa AI Assistant. How can I help you with your medicines today?"
+        "welcome": "Hi! I am the SahiDawa AI Assistant. How can I help you with your medicines today?",
+        "tooltipLabel": "AI Health Assistant"
     },
     "about": {
         "badge": "GSSoC 2026 Open Source Project",
@@ -458,7 +462,15 @@
         "importError": "അസാധുവായ ബാക്കപ്പ് ഫയൽ. സാധുവായ JSON ബാക്കപ്പ് അപ്‌ലോഡ് ചെയ്യുക.",
         "statusExpired": "കാലാവധി കഴിഞ്ഞു",
         "statusExpiringSoon": "ഉടൻ കാലാവധി അവസാനിക്കും ({days} ദിവസം)",
-        "statusSafe": "സുരക്ഷിതം"
+        "statusSafe": "സുരക്ഷിതം",
+        "exportCSV": "CSV എക്സ്പോർട്ട് ചെയ്യുക",
+        "exportPDF": "PDF എക്സ്പോർട്ട് ചെയ്യുക",
+        "print": "പ്രിന്റ് ചെയ്യുക",
+        "csvExportSuccess": "CSV വിജയകരമായി എക്സ്പോർട്ട് ചെയ്തു",
+        "pdfExportSuccess": "PDF വിജയകരമായി എക്സ്പോർട്ട് ചെയ്തു",
+        "noMedicinesToDisplay": "കാണിക്കാൻ മരുന്നുകൾ ഒന്നുമില്ല",
+        "generatedOn": "കാലാവധി അവസാനിക്കും",
+        "deleteMedicine": "മരുന്ന് ഒഴിവാക്കുക"
     },
     "Login": {
         "brandSubtitle": "മരുന്ന് സുരക്ഷാ പ്ലാറ്റ്ഫോം",
@@ -469,6 +481,7 @@
             "description": "Supabase URL അല്ലെങ്കിൽ anon key ലഭ്യമല്ല. സൈൻ ഇൻ ചെയ്യുന്നതിന് മുമ്പ് environment variables ചേർക്കുക."
         },
         "googleButton": "Google ഉപയോഗിച്ച് തുടരുക",
+        "githubButton": "GitHub ഉപയോഗിച്ച് തുടരുക",
         "emailSeparator": "അല്ലെങ്കിൽ ഇമെയിൽ ഉപയോഗിച്ച് തുടരുക",
         "emailLabel": "ഇമെയിൽ വിലാസം",
         "emailPlaceholder": "you@example.com",
@@ -482,7 +495,9 @@
         "errors": {
             "databaseNotConfigured": "ഈ പരിതസ്ഥിതിക്ക് ഓതന്റിക്കേഷൻ കോൺഫിഗർ ചെയ്തിട്ടില്ല.",
             "generic": "സൈൻ ഇൻ ചെയ്യാൻ കഴിഞ്ഞില്ല. ദയവായി വീണ്ടും ശ്രമിക്കുക."
-        }
+        },
+        "signUpPrompt": "Don't have an account?",
+        "signUpLink": "Sign up"
     },
     "AdminLayout": {
         "accessDeniedTitle": "പ്രവേശനം നിഷേധിച്ചു",
@@ -644,37 +659,102 @@
         "nav_reports": "My Reports",
         "nav_profile": "My Profile"
     },
-  "medicineSafety": {
-    "guideTitle": "ഉപയോഗവും സുരക്ഷാ മാർഗ്ഗനിർദ്ദേശവും",
-    "noDosageInfo": "ഈ പ്രായവിഭാഗത്തിനായുള്ള ഡോസ് വിവരങ്ങൾ ലഭ്യമല്ല.",
-    "closeButton": "സുരക്ഷാ വിവരങ്ങൾ അടയ്ക്കുക",
-    "tabs": {
-      "sideEffects": "പാർശ്വഫലങ്ങൾ",
-      "dosage": "ഡോസ്",
-      "dietaryIntake": "ഭക്ഷണക്രമം"
+    "medicineSafety": {
+        "guideTitle": "ഉപയോഗവും സുരക്ഷാ മാർഗ്ഗനിർദ്ദേശവും",
+        "noDosageInfo": "ഈ പ്രായവിഭാഗത്തിനായുള്ള ഡോസ് വിവരങ്ങൾ ലഭ്യമല്ല.",
+        "closeButton": "സുരക്ഷാ വിവരങ്ങൾ അടയ്ക്കുക",
+        "tabs": {
+            "sideEffects": "പാർശ്വഫലങ്ങൾ",
+            "dosage": "ഡോസ്",
+            "dietaryIntake": "ഭക്ഷണക്രമം"
+        },
+        "sideEffects": {
+            "standardSymptoms": "സാധാരണ ലക്ഷണങ്ങൾ",
+            "severeRedFlags": "ഗുരുതര മുന്നറിയിപ്പുകൾ — ഉടൻ വൈദ്യസഹായം തേടുക"
+        },
+        "dosage": {
+            "tabs": {
+                "kids": "കുട്ടികൾ",
+                "adults": "മുതിർന്നവർ",
+                "elderly": "വയോജനങ്ങൾ"
+            },
+            "doseLabel": "ഡോസ്:",
+            "frequencyLabel": "ആവൃത്തി:",
+            "notesHeading": "കുറിപ്പുകൾ",
+            "warningsHeading": "മുന്നറിയിപ്പുകൾ"
+        },
+        "dietary": {
+            "tabs": {
+                "dietaryIntake": "ഭക്ഷണക്രമം"
+            },
+            "storageHeading": "സംഭരണം",
+            "pregnancyHeading": "ഗർഭകാലം"
+        },
+        "disclaimer": "ഈ വിവരങ്ങൾ വിദ്യാഭ്യാസ ആവശ്യങ്ങൾക്കായുള്ളതാണ്; ഇത് വൈദ്യോപദേശത്തിന് പകരമല്ല."
     },
-    "sideEffects": {
-      "standardSymptoms": "സാധാരണ ലക്ഷണങ്ങൾ",
-      "severeRedFlags": "ഗുരുതര മുന്നറിയിപ്പുകൾ — ഉടൻ വൈദ്യസഹായം തേടുക"
+    "Health": {
+        "quickActions": "Quick actions",
+        "scanMedicine": "Scan Medicine",
+        "verifyAuthenticity": "Verify authenticity",
+        "checkSymptoms": "Check Symptoms",
+        "symptomGuidance": "AI-assisted guidance",
+        "findPharmacy": "Find Pharmacy",
+        "locateStores": "Locate verified stores",
+        "replyFallback": "I'm here to help! Could you rephrase that?",
+        "tooManyRequests": "Too many requests. Please try again in a few moments.",
+        "failedResponse": "Failed to generate AI response",
+        "genericError": "Something went wrong",
+        "returnHome": "Return to chat home",
+        "chatConversation": "Chat conversation",
+        "startVoice": "Start voice input",
+        "stopVoice": "Stop voice input",
+        "healthQuestion": "Type your health question",
+        "voiceBrowserRequired": "Voice input is not supported in this browser.",
+        "listening": "Listening... speak clearly",
+        "placeholder": "Type your health concern...",
+        "sendMessage": "Send message",
+        "footer": "For informational use only • Consult a doctor"
     },
-    "dosage": {
-      "tabs": {
-        "kids": "കുട്ടികൾ",
-        "adults": "മുതിർന്നവർ",
-        "elderly": "വയോജനങ്ങൾ"
-      },
-      "doseLabel": "ഡോസ്:",
-      "frequencyLabel": "ആവൃത്തി:",
-      "notesHeading": "കുറിപ്പുകൾ",
-      "warningsHeading": "മുന്നറിയിപ്പുകൾ"
-    },
-    "dietary": {
-      "tabs": {
-        "dietaryIntake": "ഭക്ഷണക്രമം"
-      },
-      "storageHeading": "സംഭരണം",
-      "pregnancyHeading": "ഗർഭകാലം"
-    },
-    "disclaimer": "ഈ വിവരങ്ങൾ വിദ്യാഭ്യാസ ആവശ്യങ്ങൾക്കായുള്ളതാണ്; ഇത് വൈദ്യോപദേശത്തിന് പകരമല്ല."
-  }
+    "SignUp": {
+        "brandSubtitle": "Medicine safety platform",
+        "heading": "Create your account",
+        "description": "Join SahiDawa to track medicine safety reports and verification results.",
+        "missingConfig": {
+            "title": "Authentication is not configured",
+            "description": "Supabase URL or anon key is missing. Add the environment variables before signing up."
+        },
+        "googleButton": "Continue with Google",
+        "githubButton": "Continue with Github",
+        "emailSeparator": "or continue with email",
+        "fullNameLabel": "Full name",
+        "fullNamePlaceholder": "Your full name",
+        "emailLabel": "Email address",
+        "emailPlaceholder": "you@example.com",
+        "passwordLabel": "Password",
+        "passwordPlaceholder": "Create a password",
+        "confirmPasswordLabel": "Confirm password",
+        "confirmPasswordPlaceholder": "Re-enter your password",
+        "showPassword": "Show password",
+        "hidePassword": "Hide password",
+        "showConfirmPassword": "Show confirm password",
+        "hideConfirmPassword": "Hide confirm password",
+        "signingUp": "Creating account...",
+        "signUp": "Sign Up",
+        "footerPrompt": "Already have an account?",
+        "signInLink": "Sign in",
+        "bottomText": "Protected access for SahiDawa community tools.",
+        "success": "Account created successfully! Redirecting...",
+        "successConfirmEmail": "Account created! Check your email to confirm your account before signing in.",
+        "errors": {
+            "databaseNotConfigured": "Authentication is not configured for this environment.",
+            "generic": "Unable to create account. Please try again.",
+            "fullNameRequired": "Full name is required.",
+            "emailRequired": "Email address is required.",
+            "emailInvalid": "Please enter a valid email address.",
+            "passwordRequired": "Password is required.",
+            "passwordWeak": "Password must be at least 8 characters and include uppercase, lowercase, and a number.",
+            "confirmPasswordRequired": "Please confirm your password.",
+            "passwordMismatch": "Passwords do not match."
+        }
+    }
 }
