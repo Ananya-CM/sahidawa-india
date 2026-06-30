@@ -50,6 +50,18 @@
         "voices_title": "Voices from the SahiDawa community",
         "voices_description": "Families, pharmacists, doctors, and contributors using SahiDawa to make medicine safety easier to act on."
     },
+    "A11y": {
+        "confirmClearConversation": "Confirm clear conversation",
+        "cancelClearConversation": "Cancel clear conversation",
+        "goToHomepage": "Go to homepage",
+        "closeChat": "Close chat",
+        "sendMessage": "Send message",
+        "openAiChat": "Open AI chat",
+        "closeAiChat": "Close AI chat",
+        "mainNavigation": "Main navigation",
+        "mobileNavigation": "Mobile navigation",
+        "toggleSystemParameters": "Toggle system parameters"
+    },
     "Navigation": {
         "how_it_works": "How it Works",
         "alerts": "Alerts",
@@ -135,7 +147,11 @@
         "dosageForm": "Dosage Form",
         "composition": "Composition",
         "ScanBarcode": "Scan Barcode",
-        "offlineVerify": "Queue Scan"
+        "offlineVerify": "Queue Scan",
+
+        "batch_recalled_title": "This batch has been recalled",
+        "batch_recalled_body": "Please do not use this medicine. Return it to your pharmacy immediately.",
+        "save_to_abha": "Save to ABHA Record"
     },
     "BackToTopButton": {
         "label": "Back to top"
@@ -448,7 +464,8 @@
         "title": "SahiDawa AI",
         "status": "Online",
         "welcome": "Hi! I am the SahiDawa AI Assistant. How can I help you with your medicines today?",
-        "placeholder": "Ask me about a medicine..."
+        "placeholder": "Ask me about a medicine...",
+        "tooltipLabel": "AI Health Assistant"
     },
     "Alerts": {
         "backHome": "Back to Home Page",
@@ -1026,6 +1043,8 @@
         "stat_fake": "Fake",
         "empty_title": "No Scan History Yet",
         "empty_description": "Your verified medicines will appear here.",
+        "search_placeholder": "Search medicine...",
+        "no_search_results": "No medicines match your search.",
         "item_status_label": "Status: ",
         "item_delete_button": "Delete",
         "item_copy_success": "Medicine name copied!"
@@ -1165,5 +1184,27 @@
         "warningsLabel": "Warnings",
         "ariaStartRecording": "Start recording",
         "ariaStopRecording": "Stop recording"
+    },
+    "AdminSynonyms": {
+        "title": "OCR Synonyms",
+        "subtitle": "Manage OCR misreads and medicine synonyms.",
+        "refresh": "Refresh",
+        "addNew": "Add New Rule",
+        "originalTerm": "Original Term",
+        "normalizedTerm": "Normalized Term",
+        "originalPlaceholder": "e.g., asprin",
+        "normalizedPlaceholder": "e.g., aspirin",
+        "typeLabel": "Type",
+        "typeSynonym": "Synonym",
+        "typeMisread": "OCR Misread",
+        "addButton": "Add Rule",
+        "listTitle": "Existing Rules",
+        "emptyList": "No rules found.",
+        "actions": "Actions",
+        "delete": "Delete",
+        "confirmDelete": "Are you sure you want to delete this rule?",
+        "fetchError": "Failed to fetch rules.",
+        "addError": "Failed to add rule.",
+        "deleteError": "Failed to delete rule."
     }
 }
