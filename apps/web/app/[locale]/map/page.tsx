@@ -35,6 +35,7 @@ import {
 import { type AshaWorker } from "./PharmacyMap";
 import MapHeaderLoadingIndicator from "./MapHeaderLoadingIndicator";
 import { useOfflineStatus } from "@/hooks/useOfflineStatus";
+import { getOpenNowStatus } from "../../../lib/openingHours";
 import { buildCacheKey, saveToCache, loadFromCache } from "./usePharmacyCache";
 import {
     getCachedPharmacies,
@@ -151,6 +152,8 @@ function toVerifiedPharmacy(vp: VerifiedPharmacy, id: number): Pharmacy {
         address: vp.address,
         phone: vp.phone_number || undefined,
         isVerified: verified,
+        operatingHours: vp.operating_hours || undefined,
+        timezone: vp.timezone || undefined,
     };
 }
 
@@ -285,6 +288,7 @@ type AdvancedFilters = {
     hasAddress: boolean;
     hasPhone: boolean;
     withinFiveKm: boolean;
+    openNow: boolean;
     lowRisk: boolean;
     mediumRisk: boolean;
     highRisk: boolean;
@@ -297,6 +301,7 @@ export default function PharmacyMapPage() {
         hasAddress: false,
         hasPhone: false,
         withinFiveKm: false,
+        openNow: false,
         lowRisk: false,
         mediumRisk: false,
         highRisk: false,
@@ -639,6 +644,14 @@ export default function PharmacyMapPage() {
         if (advancedFilters.withinFiveKm) {
             list = list.filter((p) => typeof p.distanceKm === "number" && p.distanceKm <= 5);
         }
+        if (advancedFilters.openNow) {
+            // Re-evaluated against the current time on every render, so the
+            // filter stays correct across page refreshes / day boundaries
+            // rather than relying on any cached/stale "is open" flag.
+            list = list.filter(
+                (p) => getOpenNowStatus(p.operatingHours, p.timezone).status === "open"
+            );
+        }
 
         // Trust / Risk score filtering (Option A)
         const hasRiskFilter =
@@ -739,6 +752,10 @@ export default function PharmacyMapPage() {
         setSelectedPharmacyId(pharmacyId);
     }, []);
 
+    const hasActiveMapFilters = Boolean(
+        searchQuery.trim() || activeFilter !== "all" || activeAdvancedFilterCount > 0
+    );
+
     const pharmacyPanelProps = {
         pharmacies: filteredPharmacies,
         isLoading,
@@ -748,6 +765,12 @@ export default function PharmacyMapPage() {
         riskSummaryText,
         onSelectPharmacy: handleSelectPharmacy,
         onHeatmapModeChange: setHeatmapMode,
+        emptyStateTitle: "No pharmacies found nearby",
+        emptyStateDescription: hasActiveMapFilters
+            ? "Try clearing your search or filters, or widen the area to discover more nearby pharmacies."
+            : "Try widening the search area or using your current location to find nearby verified stores.",
+        emptyStateActionLabel: "Use my location",
+        onEmptyStateAction: handleLocateUser,
     };
 
     return (
@@ -854,6 +877,7 @@ export default function PharmacyMapPage() {
                                             hasAddress: false,
                                             hasPhone: false,
                                             withinFiveKm: false,
+                                            openNow: false,
                                             lowRisk: false,
                                             mediumRisk: false,
                                             highRisk: false,
@@ -872,6 +896,7 @@ export default function PharmacyMapPage() {
                                     ["hasAddress", "Has address details"],
                                     ["hasPhone", "Has phone number"],
                                     ["withinFiveKm", "Within 5 km"],
+                                    ["openNow", "Open now"],
                                 ].map(([key, label]) => (
                                     <label
                                         key={key}
